@@ -1,0 +1,23 @@
+name: spread_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11.13
+  - pip
+  - numpy=1.26.4
+  - scipy=1.16.0
+  - scikit-learn=1.7.1
+  - matplotlib=3.8.3
+  - seaborn=0.13.2
+  - pandas=2.3.1
+  - pytz=2025.2
+  - pyyaml=6.0.2
+  - pymoo=0.6.1.5
+  - pytorch=2.2.1
+  - torchvision=0.22.1+cu118
+  - torchaudio=2.7.1+cu118
+  - pip:
+      - wandb==0.21.0
+      - tqdm==4.66.2
+      - other-packages-as-needed
