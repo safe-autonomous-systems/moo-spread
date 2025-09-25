@@ -26,11 +26,12 @@ To create the environment for a given setting, run:
 conda env create -f experiments/<folder>/<env_name>.yml
 conda activate <env_name>
 ```
-
 For example, to run the online experiments:
 ```bash
 conda env create -f experiments/spread/spread.yml
 conda activate spread
 ```
+The offline experiments require installing **Off-MOO-Bench** from the authors’ public repository: https://github.com/lamda-bbo/offline-moo. The datasets should be downloaded into the folder: `experiments/spread_offline/offline_moo/data/`.
+
 
 
