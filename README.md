@@ -11,4 +11,4 @@ All experiment code is contained in the `/experiments` directory:
 The following Jupyter notebooks reproduce the plots shown in the submitted paper:
 
 * `/experiments/spread/notebook_online_spread.ipynb`
-* `/experiments/spread/notebook_bayesian_spread.ipynb`
+* `/experiments/spread_bayesian/notebook_bayesian_spread.ipynb`
