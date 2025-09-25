@@ -1,4 +1,4 @@
-name: spread_env
+name: spread
 channels:
   - conda-forge
   - defaults
