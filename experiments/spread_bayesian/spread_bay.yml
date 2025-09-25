@@ -1,4 +1,4 @@
-name: spread_bayesian_env
+name: spread_bay
 channels:
   - conda-forge
   - defaults
