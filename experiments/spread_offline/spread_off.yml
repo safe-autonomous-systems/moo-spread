@@ -1,4 +1,4 @@
-name: spread_offline_env
+name: spread_off
 channels:
   - conda-forge
   - defaults
