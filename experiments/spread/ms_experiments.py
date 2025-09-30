@@ -130,7 +130,7 @@ def train_spread(problem, args):
                 optimizer.step()
                 epoch_loss += loss_simple.item()
 
-            epoch_loss = epoch_loss / args.batch_size
+            epoch_loss = epoch_loss / len(train_dataloader)
             LOSSES.append(epoch_loss)
 
             # Validation
