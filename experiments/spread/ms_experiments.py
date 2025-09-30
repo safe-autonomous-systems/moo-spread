@@ -15,7 +15,7 @@ from tqdm import tqdm
 import datetime
 from time import time, sleep
 
-from ms_nets import DiTMOO # TransformerDiffusionModel
+from ms_nets import DiTMOO
 
 from all_funcs_utils import *
 
@@ -92,7 +92,6 @@ def train_spread(problem, args):
             model.train()
             epoch_loss = 0
 
-            # for batch in dataloader:
             for indx_batch, (batch, obj_values) in enumerate(train_dataloader):
                 optimizer.zero_grad()
 
@@ -127,7 +126,6 @@ def train_spread(problem, args):
                 ## DDPM loss
                 loss_simple = l_simple_loss(predicted_noise, noise)
 
-                # Combine losses
                 loss_simple.backward()
                 optimizer.step()
                 epoch_loss += loss_simple.item()
@@ -136,7 +134,6 @@ def train_spread(problem, args):
             LOSSES.append(epoch_loss)
 
             # Validation
-            # for batch in dataloader:
             model.eval()
             val_loss = 0.0
             for indx_batch, (val_batch, val_obj_values) in enumerate(val_dataloader):
@@ -172,7 +169,7 @@ def train_spread(problem, args):
 
                 val_loss += loss_simple.item()
 
-            val_loss = val_loss / args.batch_size
+            val_loss = val_loss / len(val_dataloader)
 
             if val_loss <= best_val_loss:
                 best_val_loss = val_loss
