@@ -25,7 +25,6 @@ def train_spread(model, args, train_dataloader, val_dataloader = None):
         model.train()
         epoch_loss = 0
 
-        # for batch in dataloader:
         for indx_batch, (batch, obj_values) in enumerate(train_dataloader):
             optimizer.zero_grad()
 
@@ -60,12 +59,11 @@ def train_spread(model, args, train_dataloader, val_dataloader = None):
             ## DDPM loss
             loss_simple = l_simple_loss(predicted_noise, noise)
 
-            # Combine losses
             loss_simple.backward()
             optimizer.step()
             epoch_loss += loss_simple.item()
 
-        epoch_loss = epoch_loss / args.batch_size
+        epoch_loss = epoch_loss / len(train_dataloader)
             
         if args.patience < np.inf:
             assert val_dataloader is not None, "Validation dataloader is required for early stopping."
@@ -105,7 +103,7 @@ def train_spread(model, args, train_dataloader, val_dataloader = None):
 
                 val_loss += loss_simple.item()
 
-            val_loss = val_loss / args.batch_size
+            val_loss = val_loss / len(val_dataloader)
 
             if val_loss <= best_val_loss:
                 best_val_loss = val_loss
@@ -361,4 +359,5 @@ def gen_offspring_via_spread(model, Parent, surrogate_model, p_model, args):
     result = np.vstack(new_offsprings)
     
     return result
+
             
