@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/images/logo_spread.png" style="width: 25%; height: auto;">
+  <img src="/images/logo_spread.png" style="width: 30%; height: auto;">
 </p>
 
 # SPREAD: Sampling-based Pareto Front Refinement via Efficient Adaptive Diffusion
