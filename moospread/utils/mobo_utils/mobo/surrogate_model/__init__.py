@@ -1,0 +1,2 @@
+from moospread.utils.mobo_utils.mobo.surrogate_model.gaussian_process import GaussianProcess
+from moospread.utils.mobo_utils.mobo.surrogate_model.thompson_sampling import ThompsonSampling

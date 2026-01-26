@@ -1,0 +1,1 @@
+from moospread.utils.mobo_utils.mobo.solver.parego import ParEGOSolver
