@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moospread"
+version = "0.1.0"
+description = "Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [
+  {name = "Sedjro Salomon Hotegni", email = "salomon.hotegni@aims.ac.rw"}
+]
+maintainers = [
+  {name = "Sedjro Salomon Hotegni", email = "salomon.hotegni@tu-dortmund.de"}
+]
+
+dependencies = [
+  "numpy",
+  "torch"
+]
+
+[tool.setuptools.packages.find]
+include = ["moospread*"]
+exclude = ["experiments*", "images*"]
+
+[project.optional-dependencies]
+dev = [
+    "coverage",  # testing
+    "mypy",  # linting
+    "pytest",  # testing
+    "ruff"  # linting
+]
+
+[project.urls]
+bugs = "https://github.com/safe-autonomous-systems/moo-spread/issues"
+changelog = "https://github.com/safe-autonomous-systems/moo-spread/blob/main/changelog.md"
+Homepage = "https://github.com/safe-autonomous-systems/moo-spread"
+

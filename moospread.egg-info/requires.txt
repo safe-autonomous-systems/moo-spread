@@ -1,0 +1,8 @@
+numpy
+torch
+
+[dev]
+coverage
+mypy
+pytest
+ruff

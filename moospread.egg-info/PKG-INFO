@@ -1,0 +1,75 @@
+Metadata-Version: 2.4
+Name: moospread
+Version: 0.1.0
+Summary: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
+Author-email: Sedjro Salomon Hotegni <salomon.hotegni@aims.ac.rw>
+Maintainer-email: Sedjro Salomon Hotegni <salomon.hotegni@tu-dortmund.de>
+License: MIT License
+        
+        Copyright (c) 2026 Sedjro Salomon Hotegni
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+        
+Project-URL: bugs, https://github.com/safe-autonomous-systems/moo-spread/issues
+Project-URL: changelog, https://github.com/safe-autonomous-systems/moo-spread/blob/main/changelog.md
+Project-URL: Homepage, https://github.com/safe-autonomous-systems/moo-spread
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: torch
+Provides-Extra: dev
+Requires-Dist: coverage; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Dynamic: license-file
+
+<p align="center">
+  <img src="/images/logo_well_spread.png" style="width: 30%; height: auto;">
+</p>
+
+# SPREAD: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
+
+> SPREAD is a novel sampling-based approach for multi-objective optimization that leverages diffusion models to efficiently refine and generate well-spread Pareto front approximations. It combines the expressiveness of diffusion models with multi-objective optimization principles to achieve both high convergence to the Pareto front and excellent diversity across the objective space. SPREAD demonstrates competitive performance against state-of-the-art methods while providing a flexible framework for different optimization contexts.
+
+### 🔬 Experiments
+
+All experiment code is contained in the `/experiments` directory:
+
+* **Online setting:** `/experiments/spread/`
+* **Offline setting:** `/experiments/spread_offline/`
+* **Bayesian setting:** `/experiments/spread_bayesian/`
+
+The following Jupyter notebooks reproduce the plots shown in our paper:
+
+* `/experiments/spread/notebook_online_spread.ipynb`
+* `/experiments/spread_bayesian/notebook_bayesian_spread.ipynb`
+
+### ⚙️ Environment Setup
+
+Each experiment setting comes with its own environment file located in the corresponding folder:
+
+- Online setting: `experiments/spread/spread.yml`
+- Offline setting: `experiments/spread_offline/spread_off.yml`
+- Bayesian setting: `experiments/spread_bayesian/spread_bay.yml`
+
+To create the environment for a given setting, run:
+```bash
+conda env create -f experiments/<folder>/<env_name>.yml
+conda activate <env_name>
+```
+For example, to run the online experiments:
+```bash
+conda env create -f experiments/spread/spread.yml
+conda activate spread
+```
+The offline experiments require installing **Off-MOO-Bench** from the authors’ public repository: https://github.com/lamda-bbo/offline-moo. The datasets should be downloaded into the folder: `experiments/spread_offline/offline_moo/data/`.
+
+
+
