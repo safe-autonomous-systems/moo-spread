@@ -21,8 +21,6 @@
 conda create -n moospread python=3.11
 conda activate moospread
 pip install moospread
-# To install CUDA‐enabled PyTorch, run (or visit: https://pytorch.org/get-started/locally/):
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 Or, to install the latest code from GitHub:
 ```python
@@ -31,8 +29,6 @@ conda activate moospread
 git clone https://github.com/safe-autonomous-systems/moo-spread.git
 cd moo-spread
 pip install -e .
-# To install CUDA‐enabled PyTorch, run (or visit: https://pytorch.org/get-started/locally/):
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 ### Basic usage
 This example shows how to solve a standard multi-objective optimization benchmark (ZDT2) using the **SPREAD** solver.
