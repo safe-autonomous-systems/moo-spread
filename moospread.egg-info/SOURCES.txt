@@ -1,5 +1,6 @@
 LICENSE
 README.md
+README_PYPI.md
 pyproject.toml
 moospread/__init__.py
 moospread/core.py
