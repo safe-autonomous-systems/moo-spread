@@ -1,3 +1,5 @@
+.. _getting-started:
+
 Getting Started
 ===============
 
@@ -83,4 +85,4 @@ To explore more advanced configurations, see:
 - :ref:`offline-setting`
 - :ref:`mobo-setting`
 
-You can also define your own optimization problem following the guidelines in :ref:`custom-problem`, if it is not listed in :ref:`problems`: .
+You can also define your own optimization problem following the guidelines in :ref:`problems`, if it is not listed in :ref:`test-problems`: .
