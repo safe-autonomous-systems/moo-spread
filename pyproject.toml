@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moospread"
-version = "0.1.1"
+version = "0.1.2"
 description = "Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion"
 readme = "README_PYPI.md"
 requires-python = ">=3.8"
@@ -17,21 +17,39 @@ maintainers = [
 ]
 
 dependencies = [
-  "numpy",
-  "torch"
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "scikit-learn>=1.3",
+  "matplotlib>=3.7",
+  "pandas>=2.0",
+  "pytz",
+  "PyYAML>=6.0",
+  "tqdm>=4.66",
+
+  # MOO / optimization
+  "pymoo>=0.5",
+
+  # PyTorch stack
+  "torch>=2.2",
+  "torchvision",
+  "torchaudio",
+
+  # Bayesian optimization / probabilistic
+  "gpytorch>=1.10",
+  "botorch>=0.8.5",
+  "pyro-ppl>=1.9.1",
 ]
+
 
 [tool.setuptools.packages.find]
 include = ["moospread*"]
 exclude = ["experiments*", "images*"]
 
 [project.optional-dependencies]
-dev = [
-    "coverage",  # testing
-    "mypy",  # linting
-    "pytest",  # testing
-    "ruff"  # linting
-]
+dev = ["pytest", "ruff", "build", "twine"]
+plot = ["seaborn>=0.13"]
+config = ["hydra-core>=1.3.2", "omegaconf>=2.3.0"]
+tracking = ["wandb>=0.20"]
 
 [project.urls]
 bugs = "https://github.com/safe-autonomous-systems/moo-spread/issues"
