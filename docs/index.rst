@@ -6,3 +6,8 @@ moospread
    :caption: Contents
 
    getting_started
+   online-setting
+   offline-setting
+   mobo-setting
+   problems
+   custom-problem
