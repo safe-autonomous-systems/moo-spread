@@ -18,4 +18,4 @@ author = "Sedjro Salomon Hotegni and Sebastian Peitz"
 
 release = "0.1.2"
 
-copyright = "2026, Sedjro Salomon Hotegni, Sebastian Peitz"
+copyright = "2026, sas.cs.tu-dortmund.de"
