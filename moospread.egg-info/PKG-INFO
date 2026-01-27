@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: moospread
-Version: 0.1.1
+Version: 0.1.2
 Summary: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 Author-email: Sedjro Salomon Hotegni <salomon.hotegni@aims.ac.rw>
 Maintainer-email: Sedjro Salomon Hotegni <salomon.hotegni@tu-dortmund.de>
@@ -21,13 +21,33 @@ Project-URL: Homepage, https://github.com/safe-autonomous-systems/moo-spread
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: numpy
-Requires-Dist: torch
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: scikit-learn>=1.3
+Requires-Dist: matplotlib>=3.7
+Requires-Dist: pandas>=2.0
+Requires-Dist: pytz
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: tqdm>=4.66
+Requires-Dist: pymoo>=0.5
+Requires-Dist: torch>=2.2
+Requires-Dist: torchvision
+Requires-Dist: torchaudio
+Requires-Dist: gpytorch>=1.10
+Requires-Dist: botorch>=0.8.5
+Requires-Dist: pyro-ppl>=1.9.1
 Provides-Extra: dev
-Requires-Dist: coverage; extra == "dev"
-Requires-Dist: mypy; extra == "dev"
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
+Requires-Dist: build; extra == "dev"
+Requires-Dist: twine; extra == "dev"
+Provides-Extra: plot
+Requires-Dist: seaborn>=0.13; extra == "plot"
+Provides-Extra: config
+Requires-Dist: hydra-core>=1.3.2; extra == "config"
+Requires-Dist: omegaconf>=2.3.0; extra == "config"
+Provides-Extra: tracking
+Requires-Dist: wandb>=0.20; extra == "tracking"
 Dynamic: license-file
 
 <p align="center">
