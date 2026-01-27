@@ -1,4 +1,4 @@
 Getting started
 ===============
 
-Welcome to moospread documentation.
+Welcome to `moospread` documentation.
