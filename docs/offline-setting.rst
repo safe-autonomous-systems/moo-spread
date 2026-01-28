@@ -35,6 +35,9 @@ You may also use a custom surrogate model architecture by specifying ``surrogate
 By default, ``moospread`` uses the ``MultipleModels`` surrogate from
 `Offline Multi-Objective Optimization <https://proceedings.mlr.press/v235/xue24b.html>`_,
 trained on the provided static dataset as a proxy for the objective functions.
+In offline optimization, dataset points are commonly normalized using z-score or min–max scaling.
+``moospread`` provides this functionality through the ``offline_normalization_method`` argument.
+Valid values are ``"z_score"``, ``"min_max"``, and ``None``. The default is ``"z_score"``.
 
 .. code-block:: python
 
