@@ -43,35 +43,23 @@ from moospread import SPREAD
 from moospread.tasks import ZDT2
 
 # Define the problem
-n_var = 30
-problem = ZDT2(n_var=n_var)
+problem = ZDT2(n_var=30)
 
 # Initialize the SPREAD solver
 solver = SPREAD(
     problem,
     data_size=10000,
-    timesteps=5000,
+    timesteps=1000,
     num_epochs=1000,
     train_tol=100,
-    num_blocks=3,
-    validation_split=0.1,
     mode="online",
     seed=2026,
     verbose=True
 )
 
 # Solve the problem
-results = solver.solve(
+res_x, res_y = solver.solve(
     num_points_sample=200,
-    strict_guidance=False,
-    rho_scale_gamma=0.9,
-    nu_t=10.0,
-    eta_init=0.9,
-    num_inner_steps=10,
-    lr_inner=0.9,
-    free_initial_h=True,
-    use_sigma_rep=False,
-    kernel_sigma_rep=0.01,
     iterative_plot=True,
     plot_period=10,
     max_backtracks=25,
