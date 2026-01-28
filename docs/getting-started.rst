@@ -62,7 +62,7 @@ This example shows how to solve an online multi-objective optimization benchmark
    )
 
    # Solve the problem
-   results = solver.solve(
+   res_x, res_y = solver.solve(
        num_points_sample=200,
        iterative_plot=True,
        plot_period=10,
