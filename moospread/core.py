@@ -225,7 +225,7 @@ class SPREAD:
                  num_inner_steps=10, lr_inner=0.9,
                  free_initial_h=True,
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
-                 iterative_plot=True, plot_period=100,
+                 iterative_plot=True, plot_period=100, plot_dataset=False,
                  max_backtracks=100, label=None, save_results=True,
                  load_models=False,
                  samples_store_path="./samples_dir/",
@@ -288,7 +288,7 @@ class SPREAD:
                  num_inner_steps=num_inner_steps, lr_inner=lr_inner,
                  free_initial_h=free_initial_h,
                  use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
-                 iterative_plot=iterative_plot, plot_period=plot_period,
+                 iterative_plot=iterative_plot, plot_period=plot_period, plot_dataset=plot_dataset,
                  max_backtracks=max_backtracks, label=label,
                  save_results=save_results,
                  samples_store_path=samples_store_path,
@@ -716,7 +716,7 @@ class SPREAD:
                  num_inner_steps=10, lr_inner=1e-4,
                  free_initial_h=True,
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
-                 iterative_plot=True, plot_period=100,
+                 iterative_plot=True, plot_period=100, plot_dataset=False,
                  max_backtracks=25, label=None,
                  samples_store_path="./samples_dir/",
                  images_store_path="./images_dir/",
@@ -788,15 +788,15 @@ class SPREAD:
                         self.plot_func(list_fi, self.timesteps,
                                        num_points_sample,
                                        extra=pareto_front,
+                                       dataset = self.dataset,
                                        label=label, images_store_path=images_store_path)
                     else:
-                        plot_dataset = True if self.mode == "offline" else False
                         list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
                         list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                         self.plot_pareto_front(list_fi,  self.timesteps,
                                                 num_points_sample,
                                                 extra=pareto_front,
-                                                plot_dataset=plot_dataset,
+                                                plot_dataset=False,
                                                     pop=list_fi_pop,
                                                     label=label, images_store_path=images_store_path)
 
@@ -932,9 +932,9 @@ class SPREAD:
                                 self.plot_func(list_fi, t, 
                                                    num_points_sample,
                                                    extra= pareto_front,
+                                                   dataset = self.dataset,
                                                    label=label, images_store_path=images_store_path)
                             else:
-                                plot_dataset = True if self.mode == "offline" else False
                                 list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
                                 list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                                 self.plot_pareto_front(list_fi, t, 
@@ -1822,9 +1822,10 @@ class SPREAD:
                         # label="Generated optimal points")
             if plot_dataset and (self.dataset) is not None:
                 _, Y = self.dataset
-                Y = self.offline_denormalization(Y,
-                                                 self.y_meanormin,
-                                                 self.y_stdormax)
+                if self.mode == "offline":
+                    Y = self.offline_denormalization(Y,
+                                                    self.y_meanormin,
+                                                    self.y_stdormax)
                 plt.scatter(Y[:, 0], Y[:, 1],
                             c="blue", s=5, alpha=1.0,)
                             # label="Training data points")
