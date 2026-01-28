@@ -24,7 +24,7 @@ In this example, we use the rocket injector design task (RE37), which is a three
    from moospread.tasks import RE37
 
    # Define the problem
-   problem = RE37()
+   problem = RE37(ref_point=[0.99, 0.96, 0.99]) # reference point from our paper
 
 
 When initializing the SPREAD solver, the parameter ``mode`` must be set to ``"offline"``, and the
