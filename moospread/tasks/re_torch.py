@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from pymoo.problems import get_problem
 from moospread.problem import PymooProblemTorch
+from importlib import resources
 import os
 import numpy as np
 
@@ -32,8 +33,12 @@ class RE21(PymooProblemTorch):
         self.path = path
     
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
-        assert self.path is not None, "Path to Pareto front file not specified."
-        front = np.loadtxt(self.path)
+        try:
+            front = np.loadtxt(self.path)
+        except:
+            front = np.loadtxt(resources.files("moospread.tasks.pf_re_tasks").joinpath(f"reference_points_{self.__class__.__name__}.dat"))
+        else:
+            assert self.path is not None, "Path to Pareto front file not specified."
         return torch.from_numpy(front).to(self.device)
 
     def _evaluate(self, X: torch.Tensor, out: dict, *args, **kwargs) -> None:
@@ -88,8 +93,12 @@ class RE33(PymooProblemTorch):
         self.path = path
     
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
-        assert self.path is not None, "Path to Pareto front file not specified."
-        front = np.loadtxt(self.path)
+        try:
+            front = np.loadtxt(self.path)
+        except:
+            front = np.loadtxt(resources.files("moospread.tasks.pf_re_tasks").joinpath(f"reference_points_{self.__class__.__name__}.dat"))
+        else:
+            assert self.path is not None, "Path to Pareto front file not specified."
         return torch.from_numpy(front).to(self.device)
 
 
@@ -160,8 +169,12 @@ class RE34(PymooProblemTorch):
         self.path = path
 
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
-        assert self.path is not None, "Path to Pareto front file not specified."
-        front = np.loadtxt(self.path)
+        try:
+            front = np.loadtxt(self.path)
+        except:
+            front = np.loadtxt(resources.files("moospread.tasks.pf_re_tasks").joinpath(f"reference_points_{self.__class__.__name__}.dat"))
+        else:
+            assert self.path is not None, "Path to Pareto front file not specified."
         return torch.from_numpy(front).to(self.device)
 
     def _evaluate(self, x: torch.Tensor, out: dict, *args, **kwargs) -> None:
@@ -240,8 +253,12 @@ class RE37(PymooProblemTorch):
         self.path = path
 
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
-        assert self.path is not None, "Path to Pareto front file not specified."
-        front = np.loadtxt(self.path)
+        try:
+            front = np.loadtxt(self.path)
+        except:
+            front = np.loadtxt(resources.files("moospread.tasks.pf_re_tasks").joinpath(f"reference_points_{self.__class__.__name__}.dat"))
+        else:
+            assert self.path is not None, "Path to Pareto front file not specified."
         return torch.from_numpy(front).to(self.device)
 
     def _evaluate(self, x: torch.Tensor, out: dict, *args, **kwargs) -> None:
