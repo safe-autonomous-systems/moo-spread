@@ -80,18 +80,20 @@ If the solver is reused with the same initialization, retraining of both the dif
   - ``eta_init = 0.1 / 0.01``
   - ``lr_inner = 0.9``
 
-If intermediate Pareto fronts are not required, set ``iterative_plot=False``.
+If you do not need intermediate Pareto fronts, set ``iterative_plot=False``.
+When enabled, ``plot_dataset=True`` allows you to display the static dataset alongside the generated solutions, making it easier to evaluate their quality.
 
 .. code-block:: python
 
    # Solve the problem
-   results = solver.solve(
+   res_x, res_y = solver.solve(
        num_points_sample=200,
        rho_scale_gamma=0.001,
        eta_init=0.1,
        lr_inner=0.9,
        iterative_plot=True,
        plot_period=10,
+       plot_dataset=True,
        max_backtracks=25,
        save_results=True,
        samples_store_path="./samples_dir/",
