@@ -66,9 +66,7 @@ If no dataset is provided, the SPREAD solver must have access to the true object
 In this case, the ``data_size`` argument must be specified, allowing an online problem to be treated as an offline task.
 
 To solve the problem, specify the number of solutions to generate using the ``num_points_sample`` argument.
-If the solver is reused with the same initialization, retraining of both the diffusion model and the surrogate models can be avoided by setting ``load_models=True``.
-
-In the offline setting, we recommend the following parameter choices:
+If the solver is reused with the same initialization, retraining of both the diffusion model and the surrogate models can be avoided by setting ``load_models=True``. In the offline setting, we recommend the following parameter choices:
 
 - For bi-objective problems:
   
@@ -79,6 +77,8 @@ In the offline setting, we recommend the following parameter choices:
 - For problems with more than two objectives:
   
   - ``rho_scale_gamma = 0.001 / 0.0001``
+  - ``eta_init = 0.1 / 0.01``
+  - ``lr_inner = 0.9``
 
 If intermediate Pareto fronts are not required, set ``iterative_plot=False``.
 
