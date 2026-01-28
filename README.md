@@ -44,8 +44,7 @@ from moospread import SPREAD
 from moospread.tasks import ZDT2
 
 # Define the problem
-n_var = 30
-problem = ZDT2(n_var=n_var)
+problem = ZDT2(n_var=30)
 
 # Initialize the SPREAD solver
 solver = SPREAD(
