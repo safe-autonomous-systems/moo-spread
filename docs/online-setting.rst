@@ -55,7 +55,7 @@ If intermediate Pareto fronts are not needed, simply set ``iterative_plot=False`
 .. code-block:: python
 
    # Solve the problem
-   results = solver.solve(
+   res_x, res_y = solver.solve(
        num_points_sample=200,
        rho_scale_gamma=0.9,
        iterative_plot=True,
