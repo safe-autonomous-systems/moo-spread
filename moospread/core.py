@@ -132,7 +132,7 @@ class SPREAD:
                     print("Training dataset generated.")
                 
         if self.mode == "offline":
-            assert offline_normalization_method in ["z_score", "min_max", "none"], "Invalid normalization method"
+            assert offline_normalization_method in ["z_score", "min_max", None], "Invalid normalization method"
             if offline_normalization_method == "z_score":
                 self.offline_normalization = offdata_z_score_normalize
                 self.offline_denormalization = offdata_z_score_denormalize
