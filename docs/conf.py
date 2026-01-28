@@ -9,6 +9,10 @@ html_theme_options = {
     "use_edit_page_button": True,
 }
 
+extensions = [
+    "sphinx.ext.mathjax",
+]
+
 html_logo = "logo_well_spread.png"
 
 html_title = "moospread"
