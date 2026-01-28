@@ -47,8 +47,7 @@ This example shows how to solve an online multi-objective optimization benchmark
    from moospread.tasks import ZDT2
 
    # Define the problem
-   n_var = 30
-   problem = ZDT2(n_var=n_var)
+   problem = ZDT2(n_var=30)
 
    # Initialize the SPREAD solver
    solver = SPREAD(
