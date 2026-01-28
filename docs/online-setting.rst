@@ -19,8 +19,7 @@ Here, we consider the ZDT2 benchmark problem as an example.
    from moospread.tasks import ZDT2
 
    # Define the problem
-   n_var = 30  # Number of decision variables
-   problem = ZDT2(n_var=n_var)
+   problem = ZDT2(n_var=30)
 
 
 When initializing the SPREAD solver, the parameter ``mode`` must be set to ``"online"`` and the size of the training dataset is specified using the ``data_size`` argument.
