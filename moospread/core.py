@@ -54,7 +54,6 @@ class SPREAD:
                  seed: int = 0,
                  offline_global_clamping: bool = False,
                  offline_normalization_method: str = "z_score",
-                 dominance_classifier = None,
                  train_func_surrogate = None,
                  plot_func = None,
                  verbose: bool = True):
@@ -90,7 +89,6 @@ class SPREAD:
         
         self.train_func_surrogate = train_func_surrogate
         self.plot_func = plot_func
-        self.dominance_classifier = dominance_classifier
 
         self.seed = seed
         # Set the seed for reproducibility
@@ -225,7 +223,8 @@ class SPREAD:
                  num_inner_steps=10, lr_inner=0.9,
                  free_initial_h=True,
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
-                 iterative_plot=True, plot_period=100, plot_dataset=False,
+                 iterative_plot=True, plot_period=100, 
+                 plot_dataset=False, plot_population=False,
                  max_backtracks=100, label=None, save_results=True,
                  load_models=False,
                  samples_store_path="./samples_dir/",
@@ -288,7 +287,8 @@ class SPREAD:
                  num_inner_steps=num_inner_steps, lr_inner=lr_inner,
                  free_initial_h=free_initial_h,
                  use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
-                 iterative_plot=iterative_plot, plot_period=plot_period, plot_dataset=plot_dataset,
+                 iterative_plot=iterative_plot, plot_period=plot_period, 
+                 plot_dataset=plot_dataset, plot_population=plot_population,
                  max_backtracks=max_backtracks, label=label,
                  save_results=save_results,
                  samples_store_path=samples_store_path,
@@ -716,7 +716,8 @@ class SPREAD:
                  num_inner_steps=10, lr_inner=1e-4,
                  free_initial_h=True,
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
-                 iterative_plot=True, plot_period=100, plot_dataset=False,
+                 iterative_plot=True, plot_period=100, 
+                 plot_dataset=False, plot_population=False,
                  max_backtracks=25, label=None,
                  samples_store_path="./samples_dir/",
                  images_store_path="./images_dir/",
@@ -797,8 +798,8 @@ class SPREAD:
                                                 num_points_sample,
                                                 extra=pareto_front,
                                                 plot_dataset=False,
-                                                    pop=list_fi_pop,
-                                                    label=label, images_store_path=images_store_path)
+                                                pop=list_fi_pop,
+                                                label=label, images_store_path=images_store_path)
 
         prev_pf_points = None
         num_optimal_points = 0
@@ -940,7 +941,7 @@ class SPREAD:
                                 self.plot_pareto_front(list_fi, t, 
                                                     num_points_sample,
                                                     extra= pareto_front,
-                                                    pop=list_fi_pop,
+                                                    pop=list_fi_pop if plot_population else None,
                                                     plot_dataset=plot_dataset,
                                                     label=label, images_store_path=images_store_path)
                                 
@@ -1827,7 +1828,7 @@ class SPREAD:
                                                     self.y_meanormin,
                                                     self.y_stdormax)
                 plt.scatter(Y[:, 0], Y[:, 1],
-                            c="blue", s=5, alpha=1.0,)
+                            c="violet", s=5, alpha=1.0,)
                             # label="Training data points")
 
             plt.xlabel("$f_1$", fontsize=14)
