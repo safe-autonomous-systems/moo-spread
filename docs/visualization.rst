@@ -3,28 +3,37 @@
 Visualization
 =============
 
-Iterative plots
+Iterative Plots
 ---------------
 
-If ``iterative_plot`` plot is enabled when solving a problem, ``moospread`` stores in the directory provided via ``images_store_path``, 
-the images of the successive Pareto fronts. Some arguments of ``solver.solve(...)`` to control the plots are ``plot_period``, 
-``plot_dataset`` (whether to plot the training dataset along), and ``plot_population`` (whether to plot the full population of samples).  
-You can also provide your own plotting function at the SPREAD solver initialization, via the argument ``plot_func``. 
-Your  plotting function should accept the same arguments as ``moospread.plot_pareto_front``.
+When ``iterative_plot`` is enabled during problem solving, ``moospread`` stores images of successive Pareto fronts in the directory specified by ``images_store_path``.
+Several arguments of ``solver.solve(...)`` can be used to control the visualization process:
+
+- ``plot_period``: frequency of plotting,
+- ``plot_dataset``: whether to display the training dataset alongside the generated solutions,
+- ``plot_population``: whether to plot the full population of samples.
+
+You may also provide a custom plotting function when initializing the SPREAD solver via the ``plot_func`` argument.
+The custom plotting function must accept the same arguments as ``moospread.plot_pareto_front``.
+
 
 Video
 -----
 
-One reason to enable ``iterative_plot`` is to visualize the optimization process at the end via a video. This can be done using:
+A main motivation for enabling ``iterative_plot`` is to visualize the optimization process as a video after completion.
+This can be achieved using:
 
 .. code-block:: python
 
-   SPREAD.create_video(image_folder, 
-                      output_video,
-                      total_duration_s,
-                      first_transition_s,
-                      fps)
+   SPREAD.create_video(
+       image_folder,
+       output_video,
+       total_duration_s,
+       first_transition_s,
+       fps
+   )
 
-This will create a video from images in ``image_folder``, sorted by t=... in filename. 
-The first transition (first->second image) lasts ``first_transition_s`` seconds, while the remaining transitions share the remaining time equally.
-The output video has a total duration of ``total_duration_s`` seconds at ``fps`` frames per second.
+This function creates a video from the images stored in ``image_folder``, which are sorted according to the time index encoded in their filenames (``t=...``).
+
+The first transition (from the first to the second image) lasts ``first_transition_s`` seconds, while the remaining transitions share the remaining time equally.
+The resulting video has a total duration of ``total_duration_s`` seconds and is rendered at ``fps`` frames per second.
