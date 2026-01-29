@@ -20,8 +20,7 @@ As an example, consider the ``ZDT2`` problem, a bi-objective benchmark (typicall
 
    \begin{aligned}
    f_1(x) &= x_1,\\
-   g(x)   &= 1 + \frac{9}{n-1}\sum_{i=2}^{n} x_i,\\
-   f_2(x) &= g(x)\left(1 - \left(\frac{f_1(x)}{g(x)}\right)^2\right).
+   f_2(x) &= g(x)\left(1 - \left(\frac{f_1(x)}{g(x)}\right)^2\right),\qquad \text{with}\ g(x)   = 1 + \frac{9}{n-1}\sum_{i=2}^{n} x_i.
    \end{aligned}
 
 Equivalently, using the helper function :math:`h(f_1,g) = 1 - (f_1/g)^2`, one can write
