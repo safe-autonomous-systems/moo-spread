@@ -51,6 +51,7 @@ This problem can be implemented as follows:
 .. code-block:: python
 
    import torch
+   from moospread import PymooProblemTorch
 
    class ZDT2(PymooProblemTorch):
        def __init__(
@@ -70,7 +71,6 @@ This problem can be implemented as follows:
            self.ref_point = ref_point
 
        # Provide the true Pareto front (if known; otherwise return None).
-       # If this returns None, hypervolume will not be computed.
        def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
            x = torch.linspace(0.0, 1.0, n_pareto_points, device=self.device)
            return torch.stack([x, 1.0 - x.pow(2)], dim=1)
