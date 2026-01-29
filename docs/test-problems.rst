@@ -1,12 +1,15 @@
 .. _test-problems:
 
 Test Problems
-==============
+=============
 
-Accessible via ``moospread.tasks``, we provide some commonly used multi-objective optimization test problems.
-The provided reference points (for hypervolume calculation) are suitable for a specific setting. 
-For the other settings, it can be provided at the problem definition (e.g. ``RE21(ref_point = [..., ...])``).
-Please take a look at our paper for reference points suggestions per setting.
+The test problems provided by ``moospread`` can be accessed via ``moospread.tasks``.
+We include several commonly used multi-objective optimization benchmark problems.
+
+The provided reference points (used for hypervolume computation) are suitable for specific settings.
+For other settings, a reference point can be specified when defining the problem
+(e.g., ``RE21(ref_point=[..., ...])``).
+Please refer to our paper for recommended reference points for each optimization setting.
 
 .. list-table::
    :header-rows: 1
@@ -14,12 +17,12 @@ Please take a look at our paper for reference points suggestions per setting.
    * - Problem
      - Variables
      - Objectives
-     - Pareto Front Shape 
-     - Reference point
+     - Pareto Front Shape
+     - Recommended Setting
    * - ZDT1
      - :math:`d \ge 2`
      - 2
-     - Convexe
+     - Convex
      - :ref:`online-setting`
    * - ZDT2
      - :math:`d \ge 2`
@@ -49,43 +52,40 @@ Please take a look at our paper for reference points suggestions per setting.
    * - RE21 (Four-bar truss design)
      - 4
      - 2
-     - Convexe
+     - Convex
      - :ref:`offline-setting`
    * - RE33 (Disc brake design)
      - 4
      - 3
-     - :math:`-`
+     - –
      - :ref:`offline-setting`
    * - RE34 (Vehicle crashworthiness design)
      - 5
      - 3
-     - :math:`-`
+     - –
      - :ref:`offline-setting`
    * - RE37 (Rocket injector design)
      - 4
      - 3
-     - :math:`-`
-     - :ref:`online-setting`
+     - –
+     - :ref:`offline-setting`
    * - RE41 (Car side impact design)
      - 7
      - 4
-     - :math:`-`
+     - –
      - :ref:`offline-setting`
    * - BraninCurrin
      - 2
      - 2
-     - :math:`-`
+     - –
      - :ref:`mobo-setting`
    * - Penicillin
      - 7
      - 3
-     - :math:`-`
+     - –
      - :ref:`mobo-setting`
    * - VehicleSafety
      - 5
      - 3
-     - :math:`-`
+     - –
      - :ref:`mobo-setting`
-
-
-
