@@ -33,17 +33,17 @@ Please take a look at our paper for reference points suggestions per setting.
      - :ref:`online-setting`
    * - DTLZ2
      - :math:`d \ge 2`
-     - :math:`n \ge 3`
+     - :math:`m \ge 3`
      - Concave
      - :ref:`online-setting`
    * - DTLZ4
      - :math:`d \ge 2`
-     - :math:`n \ge 3`
+     - :math:`m \ge 3`
      - Concave
      - :ref:`online-setting`
    * - DTLZ7
      - :math:`d \ge 2`
-     - :math:`n \ge 3`
+     - :math:`m \ge 3`
      - Disconnected
      - :ref:`online-setting`
    * - RE21 (Four-bar truss design)
