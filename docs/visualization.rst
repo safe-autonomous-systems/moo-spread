@@ -14,7 +14,7 @@ Several arguments of ``solver.solve(...)`` can be used to control the visualizat
 - ``plot_population``: whether to plot the full population of samples.
 
 You may also provide a custom plotting function when initializing the SPREAD solver via the ``plot_func`` argument.
-The custom plotting function must accept the same arguments as ``moospread.plot_pareto_front``.
+The custom plotting function must accept the same arguments as ``solver.plot_pareto_front``.
 
 
 Video
@@ -25,7 +25,7 @@ This can be achieved using:
 
 .. code-block:: python
 
-   SPREAD.create_video(
+   solver.create_video(
        image_folder,
        output_video,
        total_duration_s,
