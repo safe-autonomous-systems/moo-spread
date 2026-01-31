@@ -1,9 +1,12 @@
 <p align="center">
   <img src="/images/logo_well_spread.png" style="width: 30%; height: auto;">
 </p>
+<!--
+[![PyPI version](https://badge.fury.io/py/moospread.svg)](https://badge.fury.io/py/moospread)
+-->
 <p align="center">
-<a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/advermorel.svg" alt="PyPI version"></a>
-<a href="https://moospread.readthedocs.io">
+  <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/moospread.svg" alt="PyPI version"></a>
+  <a href="https://moospread.readthedocs.io">
   <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
 </a>
 </p>
