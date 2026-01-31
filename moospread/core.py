@@ -9,6 +9,11 @@ from torch.utils.data import DataLoader, TensorDataset
 import copy
 import math
 import json
+
+import cv2
+import re
+import glob
+
 import os
 import pickle
 from tqdm import tqdm
@@ -25,7 +30,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from moospread.utils import *
-
+print
 class SPREAD:
     def __init__(self, 
                  problem,
@@ -140,9 +145,23 @@ class SPREAD:
             else:
                 self.offline_normalization = lambda x: x
                 self.offline_denormalization = lambda x: x
+                
+            if self.mode == "offline":
+                X, y = self.dataset
+                X = X.clone().detach()
+                y = y.clone().detach()
+                if self.problem.is_discrete:
+                    X = offdata_to_logits(X)
+                    _, n_dim, n_classes = tuple(X.shape)
+                    X = X.reshape(-1, n_dim * n_classes)
+                if self.problem.is_sequence:
+                    X = offdata_to_logits(X)
+                # For usual cases, we normalize the inputs 
+                # and outputs with z-score normalization
+                X, self.X_meanormin, self.X_stdormax = self.offline_normalization(X)
+                y, self.y_meanormin, self.y_stdormax = self.offline_normalization(y)
+                self.dataset = (X, y)
 
-            self.X_meanormin, self.y_meanormin  = 0, 0
-            self.X_stdormax, self.y_stdormax = 1, 1
             if self.problem.has_bounds():
                 xl = self.problem.xl
                 xu = self.problem.xu
@@ -154,7 +173,9 @@ class SPREAD:
                     xl = xl.reshape(-1, n_dim * n_classes)
                 if self.problem.is_sequence:
                     xl = offdata_to_logits(xl)
-                xl, _, _ = self.offline_normalization(xl)
+                xl, _, _ = self.offline_normalization(xl,
+                                                      self.X_meanormin,
+                                                      self.X_stdormax)
                 # xu
                 if self.problem.is_discrete:
                     xu = offdata_to_logits(xu)
@@ -162,7 +183,9 @@ class SPREAD:
                     xu = xu.reshape(-1, n_dim * n_classes)
                 if self.problem.is_sequence:
                     xu = offdata_to_logits(xu)
-                xu, _, _ = self.offline_normalization(xu)
+                xu, _, _ = self.offline_normalization(xu,
+                                                      self.X_meanormin,
+                                                      self.X_stdormax)
                 ## Set the normalized bounds
                 self.problem.xl = xl
                 self.problem.xu = xu
@@ -225,6 +248,7 @@ class SPREAD:
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
                  iterative_plot=True, plot_period=100, 
                  plot_dataset=False, plot_population=False,
+                 elev=30, azim=45,
                  max_backtracks=100, label=None, save_results=True,
                  load_models=False,
                  samples_store_path="./samples_dir/",
@@ -237,19 +261,6 @@ class SPREAD:
             X, y = self.dataset
             
             if self.mode == "offline":
-                X = X.clone().detach()
-                y = y.clone().detach()
-                if self.problem.is_discrete:
-                    X = offdata_to_logits(X)
-                    _, n_dim, n_classes = tuple(X.shape)
-                    X = X.reshape(-1, n_dim * n_classes)
-                if self.problem.is_sequence:
-                    X = offdata_to_logits(X)
-                # For usual cases, we normalize the inputs 
-                # and outputs with z-score normalization
-                X, self.X_meanormin, self.X_stdormax = self.offline_normalization(X)
-                y, self.y_meanormin, self.y_stdormax = self.offline_normalization(y)
-
                 #### SURROGATE MODEL TRAINING ####
                 if not load_models or self.surrogate_given:
                     self.train_surrogate(X, y)
@@ -289,6 +300,7 @@ class SPREAD:
                  use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
                  iterative_plot=iterative_plot, plot_period=plot_period, 
                  plot_dataset=plot_dataset, plot_population=plot_population,
+                 elev=elev, azim=azim,
                  max_backtracks=max_backtracks, label=label,
                  save_results=save_results,
                  samples_store_path=samples_store_path,
@@ -382,6 +394,8 @@ class SPREAD:
                                             free_initial_h=free_initial_h,
                                             use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
                                             iterative_plot=iterative_plot, plot_period=plot_period,
+                                            plot_dataset=plot_dataset, plot_population=plot_population,
+                                            elev=elev, azim=azim,
                                             max_backtracks=max_backtracks, label=label,
                                             samples_store_path=samples_store_path,
                                             images_store_path=images_store_path,
@@ -718,6 +732,7 @@ class SPREAD:
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
                  iterative_plot=True, plot_period=100, 
                  plot_dataset=False, plot_population=False,
+                 elev=30, azim=45,
                  max_backtracks=25, label=None,
                  samples_store_path="./samples_dir/",
                  images_store_path="./images_dir/",
@@ -765,13 +780,14 @@ class SPREAD:
         x_t = torch.rand((num_points_sample, self.problem.n_var)) # in [0, 1]
         x_t = self.problem.bounds()[0] + (self.problem.bounds()[1] - self.problem.bounds()[0]) * x_t # scale to bounds
         if self.mode == "offline":
-            x_t, _, _ = self.offline_normalization(x_t)
+            x_t, _, _ = self.offline_normalization(x_t,
+                                                    self.X_meanormin,
+                                                    self.X_stdormax)
         x_t = x_t.to(self.device)
         x_t.requires_grad = True
         if self.problem.need_repair:
             x_t.data = self.repair_bounds(x_t.data.clone())
-            
-        if self.mode == "online":
+        if self.mode in ["online", "offline"]:
             if iterative_plot and (not is_pass_function(self.problem._evaluate)):        
                 if self.problem.n_obj <= 3:   
                     pf_population = x_t.detach()
@@ -779,9 +795,45 @@ class SPREAD:
                         pf_population,
                         keep_shape=False
                     )
-                    list_fi = self.objective_functions(pf_points).split(1, dim=1)
-                    list_fi = [fi.detach().cpu().numpy() for fi in list_fi]
+                    if self.mode == "offline":
+                        # Denormalize the points before plotting
+                        res_x_t = pf_points.clone().detach()
+                        res_x_t = self.offline_denormalization(res_x_t,
+                                                                    self.X_meanormin, 
+                                                                    self.X_stdormax)
+                        res_pop = pf_population.clone().detach()
+                        res_pop = self.offline_denormalization(res_pop,
+                                                                    self.X_meanormin, 
+                                                                    self.X_stdormax)
+                        norm_xl, norm_xu = self.problem.bounds()
+                        xl, xu = self.problem.original_bounds
+                        self.problem.xl = xl
+                        self.problem.xu = xu
+                        if self.problem.is_discrete:
+                            _, dim, n_classes = tuple(res_x_t.shape)
+                            res_x_t = res_x_t.reshape(-1, dim, n_classes)
+                            res_x_t = offdata_to_integers(res_x_t)
+                                    
+                            _, dim_pop, n_classes_pop = tuple(res_pop.shape)
+                            res_pop = res_pop.reshape(-1, dim_pop, n_classes_pop)
+                            res_pop = offdata_to_integers(res_pop)
+                        if self.problem.is_sequence:
+                            res_x_t = offdata_to_integers(res_x_t)
+                            res_pop = offdata_to_integers(res_pop)
+                        # we need to evaluate the true objective functions for plotting
+                        list_fi =  self.objective_functions(res_x_t, 
+                                                                    evaluate_true=True).split(1, dim=1)
+                        list_fi_pop =  self.objective_functions(res_pop, 
+                                                                        evaluate_true=True).split(1, dim=1) 
+                        # restore the normalized bounds
+                        self.problem.xl = norm_xl
+                        self.problem.xu = norm_xu
+                    else:
+                        list_fi = self.objective_functions(pf_points).split(1, dim=1)
+                        list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
                     pareto_front = None
+                    list_fi = [fi.detach().cpu().numpy() for fi in list_fi]
+                    list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                     if self.problem.pareto_front() is not None:
                         pareto_front = self.problem.pareto_front()
                         pareto_front = [pareto_front[:, i] for i in range(self.problem.n_obj)]
@@ -789,16 +841,17 @@ class SPREAD:
                         self.plot_func(list_fi, self.timesteps,
                                        num_points_sample,
                                        extra=pareto_front,
+                                       plot_dataset=plot_dataset,
                                        dataset = self.dataset,
+                                       elev=elev, azim=azim,
                                        label=label, images_store_path=images_store_path)
                     else:
-                        list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
-                        list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                         self.plot_pareto_front(list_fi,  self.timesteps,
                                                 num_points_sample,
                                                 extra=pareto_front,
-                                                plot_dataset=False,
+                                                plot_dataset=plot_dataset,
                                                 pop=list_fi_pop,
+                                                elev=elev, azim=azim,
                                                 label=label, images_store_path=images_store_path)
 
         prev_pf_points = None
@@ -813,7 +866,9 @@ class SPREAD:
             point_n0 = torch.rand((1, self.problem.n_var)) # in [0, 1]
             point_n0 = self.problem.bounds()[0] + (self.problem.bounds()[1] - self.problem.bounds()[0]) * point_n0 # scale to bounds
             if self.mode == "offline":
-                point_n0, _, _ = self.offline_normalization(point_n0)
+                point_n0, _, _ = self.offline_normalization(point_n0,
+                                                      self.X_meanormin,
+                                                      self.X_stdormax)
             point_n0 = point_n0.to(self.device)
             point_n0.requires_grad = True
             if self.problem.need_repair:
@@ -869,7 +924,6 @@ class SPREAD:
                 else:
                     pf_population = copy.deepcopy(x_t.detach())
 
-                # print("Number of points before selection:", len(pf_population))
                 pf_points, _, _ = self.get_non_dominated_points(
                     pf_population,
                     keep_shape=False
@@ -882,7 +936,6 @@ class SPREAD:
                                         pf_points,
                                         keep_shape=False,
                                     )
-                    # print("Number of non-dominated points before selection:", len(non_dom_points))
                     if len(pf_points) > num_points_sample:
                         pf_points = self.select_top_n_candidates(
                                             pf_points,
@@ -903,6 +956,10 @@ class SPREAD:
                                 res_x_t = self.offline_denormalization(res_x_t,
                                                                             self.X_meanormin, 
                                                                             self.X_stdormax)
+                                res_pop = pf_population.clone().detach()
+                                res_pop = self.offline_denormalization(res_pop,
+                                                                            self.X_meanormin, 
+                                                                            self.X_stdormax)
                                 norm_xl, norm_xu = self.problem.bounds()
                                 xl, xu = self.problem.original_bounds
                                 self.problem.xl = xl
@@ -911,40 +968,55 @@ class SPREAD:
                                     _, dim, n_classes = tuple(res_x_t.shape)
                                     res_x_t = res_x_t.reshape(-1, dim, n_classes)
                                     res_x_t = offdata_to_integers(res_x_t)
+                                    
+                                    _, dim_pop, n_classes_pop = tuple(res_pop.shape)
+                                    res_pop = res_pop.reshape(-1, dim_pop, n_classes_pop)
+                                    res_pop = offdata_to_integers(res_pop)
                                 if self.problem.is_sequence:
                                     res_x_t = offdata_to_integers(res_x_t)
+                                    res_pop = offdata_to_integers(res_pop)
                                 # we need to evaluate the true objective functions for plotting
-                                list_fi =  self.objective_functions(pf_points, evaluate_true=True).split(1, dim=1)
+                                list_fi =  self.objective_functions(res_x_t, 
+                                                                    evaluate_true=True).split(1, dim=1)
+                                list_fi_pop =  self.objective_functions(res_pop, 
+                                                                        evaluate_true=True).split(1, dim=1)
+                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                                 # restore the normalized bounds
                                 self.problem.xl = norm_xl
                                 self.problem.xu = norm_xu
                             elif self.mode == "bayesian":
                                 # we need to evaluate the true objective functions for plotting
                                 list_fi = self.objective_functions(pf_points, evaluate_true=True).split(1, dim=1)
+                                list_fi_pop =  self.objective_functions(pf_population.detach(), evaluate_true=True).split(1, dim=1)
+                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                             else:
                                 list_fi = self.objective_functions(pf_points).split(1, dim=1)
+                                list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
+                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                             
                             list_fi = [fi.detach().cpu().numpy() for fi in list_fi]
                             pareto_front = None
                             if self.problem.pareto_front() is not None:
                                 pareto_front = self.problem.pareto_front()
                                 pareto_front = [pareto_front[:, i] for i in range(self.problem.n_obj)]
+
                             if self.plot_func is not None:
                                 self.plot_func(list_fi, t, 
                                                    num_points_sample,
                                                    extra= pareto_front,
+                                                   plot_dataset=plot_dataset,
                                                    dataset = self.dataset,
+                                                   elev=elev, azim=azim,
                                                    label=label, images_store_path=images_store_path)
                             else:
-                                list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
-                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
                                 self.plot_pareto_front(list_fi, t, 
                                                     num_points_sample,
                                                     extra= pareto_front,
                                                     pop=list_fi_pop if plot_population else None,
                                                     plot_dataset=plot_dataset,
+                                                    elev=elev, azim=azim,
                                                     label=label, images_store_path=images_store_path)
-                                
+                        
 
                 x_t = x_t.detach()
                 pbar.set_postfix({
@@ -1403,19 +1475,14 @@ class SPREAD:
                              n_prob=grads[0].shape[0], n_obj=self.problem.n_obj, 
                             verbose=False)
             y = self.objective_functions(x, get_constraint=True)
-            # print("y.keys():", y.keys())
             if "H" in y:
                 pre_h_vals = y["H"].sum(dim=1)
                 constraint_mtd='eq'
-                # print("pre_h_vals.shape:", pre_h_vals.shape)
             elif "G" in y:
-                # print("pre_h_vals.shape before:", y["G"].shape)
                 pre_h_vals = y["G"].sum(dim=1)
                 print("pre_h_vals.shape:", pre_h_vals.shape)
                 constraint_mtd='ineq'
-                # print("pre_h_vals.shape:", pre_h_vals.shape)
             y = y["F"]
-            # print("pre_h_vals.shape:", pre_h_vals.shape)
             alphas = SOLVER.compute_weights(x, y, pre_h_vals=pre_h_vals, 
                                             constraint_mtd=constraint_mtd)
             alphas = torch.nan_to_num(alphas, nan=torch.nanmean(alphas),
@@ -1625,7 +1692,6 @@ class SPREAD:
                 i for i in range(N)
                 if not any(label_matrix[j, i] == 2 for j in range(N))
             ]
-            # print(f"Number of non-dominated points: {len(PS_idx)} out of {N}")
         else:
             raise ValueError(f"Mode {self.mode} not recognized!")
             
@@ -1700,7 +1766,6 @@ class SPREAD:
                 final_idx = top_indices[torch.randperm(top_indices.size(0))]
         else:
             N = points.shape[0]
-            # print(f"In selection, N={N}, n={n}")
             # 1) Predict dominance
             label_matrix, conf_matrix = nn_predict_dom_intra(points.detach().cpu().numpy(), 
                                                             self.dominance_classifier, 
@@ -1710,7 +1775,6 @@ class SPREAD:
                 i for i in range(N)
                 if not any(label_matrix[j, i] == 2 for j in range(N))
             ]
-            # print(f"(selection) Number of non-dominated points: {len(nondom_inds)} out of {N}")
 
             # --- CASE A: too many non‑dominated → pick top-n by crowding ---
             if len(nondom_inds) > n:
@@ -1785,6 +1849,7 @@ class SPREAD:
                           label=None,
                           plot_dataset=False,
                           pop=None,
+                          elev=30, azim=45,
                           images_store_path="./images_dir/"):
         name = (
             "spread"
@@ -1808,6 +1873,16 @@ class SPREAD:
             return None
 
         elif len(list_fi) == 2:
+            if plot_dataset and (self.dataset) is not None:
+                _, Y = self.dataset
+                # Denormalize the data
+                Y = self.offline_denormalization(Y,
+                                                self.y_meanormin,
+                                                self.y_stdormax)
+                plt.scatter(Y[:, 0], Y[:, 1],
+                            c="violet", s=5, alpha=1.0,)
+                            # label="Training data points")
+                            
             if extra is not None:
                 f1, f2 = extra
                 plt.scatter(f1, f2, c="yellow", s = 5, alpha=1.0,)
@@ -1821,15 +1896,7 @@ class SPREAD:
             f1, f2 = list_fi
             plt.scatter(f1, f2, c="red", s=10, alpha=1.0,)
                         # label="Generated optimal points")
-            if plot_dataset and (self.dataset) is not None:
-                _, Y = self.dataset
-                if self.mode == "offline":
-                    Y = self.offline_denormalization(Y,
-                                                    self.y_meanormin,
-                                                    self.y_stdormax)
-                plt.scatter(Y[:, 0], Y[:, 1],
-                            c="violet", s=5, alpha=1.0,)
-                            # label="Training data points")
+            
 
             plt.xlabel("$f_1$", fontsize=14)
             plt.ylabel("$f_2$", fontsize=14)
@@ -1838,6 +1905,16 @@ class SPREAD:
         elif len(list_fi) == 3:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection="3d")
+            
+            if plot_dataset and (self.dataset is not None):
+                _, Y = self.dataset
+                # Denormalize the data
+                Y = self.offline_denormalization(Y,
+                                                self.y_meanormin,
+                                                self.y_stdormax)
+                ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2],
+                           c="violet", s=5, alpha=1.0,)
+                        #    label="Training data points")
             
             if extra is not None:
                 f1, f2, f3 = extra
@@ -1853,18 +1930,11 @@ class SPREAD:
             ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0,)
                     #    label="Generated optimal points")
 
-            if plot_dataset and (self.dataset is not None):
-                _, Y = self.dataset
-                Y = self.offline_denormalization(Y,
-                                                 self.y_meanormin,
-                                                 self.y_stdormax)
-                ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2],
-                           c="blue", s=5, alpha=1.0,)
-                        #    label="Training data points")
+            
             ax.set_xlabel("$f_1$", fontsize=14)
             ax.set_ylabel("$f_2$", fontsize=14)
             ax.set_zlabel("$f_3$", fontsize=14)
-            ax.view_init(elev=30, azim=45)
+            ax.view_init(elev=elev, azim=azim)
             ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
 
         img_dir = f"{images_store_path}/{self.problem.__class__.__name__}_{self.mode}"
@@ -1881,3 +1951,96 @@ class SPREAD:
                 bbox_inches="tight",
             )
         plt.close()
+
+    def create_video(self, image_folder, output_video,
+                            total_duration_s=20.0,
+                            first_transition_s=2.0,
+                            fps=30,
+                            extensions=("*.jpg", "*.png", "*.jpeg", "*.bmp")):
+        """Create a video from images in `image_folder`, sorted by t=... in filename.
+        The first transition (first->second image) lasts `first_transition_s` seconds.
+        The remaining transitions share the remaining time equally.
+        The output video has total duration `total_duration_s` seconds at `fps` frames per second.
+        """
+
+        # Collect and sort by t=... (descending)
+        paths = []
+        for ext in extensions:
+            paths.extend(glob.glob(os.path.join(image_folder, ext)))
+        if not paths:
+            raise RuntimeError(f"No images found in {image_folder}")
+
+        t_pat = re.compile(r"t=(\d+)")
+        def t_val(p):
+            m = t_pat.search(p)
+            return int(m.group(1)) if m else -1
+
+        paths.sort(key=lambda p: t_val(p), reverse=True)
+        N = len(paths)
+        if N < 2:
+            raise RuntimeError("Need at least two images for a transition.")
+
+        # Read first to get size
+        first_img = cv2.imread(paths[0])
+        if first_img is None:
+            raise RuntimeError(f"Cannot read: {paths[0]}")
+        h, w = first_img.shape[:2]
+        size = (w, h)
+
+        # Prepare writer
+        os.makedirs(os.path.dirname(output_video), exist_ok=True)
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(output_video, fourcc, float(fps), size)
+
+        # Frame budget
+        F_total = int(round(total_duration_s * fps))
+        F_first = int(round(first_transition_s * fps))
+        F_first = max(0, min(F_first, F_total))  # clamp just in case
+        self.frames_written = 0
+
+        def write_transition(img1, img2, d):
+            """Blend img1->img2 over d frames; d==0 means hard cut; d==1 means single frame of img2."""
+            if d <= 0:
+                return
+            img1 = cv2.resize(img1, size)
+            img2 = cv2.resize(img2, size)
+            if d == 1:
+                writer.write(img2); self.frames_written += 1
+                return
+            for j in range(d):
+                alpha = j / (d - 1)  # includes endpoints: j=0 -> img1, j=d-1 -> img2
+                frame = cv2.addWeighted(img1, 1 - alpha, img2, alpha, 0)
+                writer.write(frame); self.frames_written += 1
+
+        # Load all images (resized) once to avoid repeated disk I/O
+        imgs = []
+        for p in paths:
+            im = cv2.imread(p)
+            if im is None:
+                im = first_img.copy()
+            imgs.append(cv2.resize(im, size))
+
+        # 1) First transition: fixed 2 seconds (or less if total is tiny)
+        write_transition(imgs[0], imgs[1], F_first)
+
+        # 2) Remaining transitions share remaining frames
+        remaining_frames = F_total - self.frames_written
+        remaining_transitions = max(0, N - 2)
+
+        if remaining_transitions > 0:
+            # Distribute remaining frames across the remaining transitions.
+            # Some transitions may get 0 or 1 frame (hard/near-hard cut) if time is tight.
+            base = 0 if remaining_transitions == 0 else remaining_frames // remaining_transitions
+            extra = 0 if remaining_transitions == 0 else remaining_frames % remaining_transitions
+            # Ensure we don't exceed the total budget:
+            for i in range(remaining_transitions):
+                d = base + (1 if i < extra else 0)
+                write_transition(imgs[i + 1], imgs[i + 2], d)
+
+        # 3) If we still have spare frames (due to rounding), hold last frame
+        last = imgs[-1]
+        while self.frames_written < F_total:
+            writer.write(last); self.frames_written += 1
+
+        writer.release()
+        print(f"✅ Saved: {output_video}  | duration={total_duration_s}s, fps={fps}, frames={F_total}")
