@@ -1,15 +1,17 @@
 <p align="center">
   <img src="/images/logo_well_spread.png" style="width: 30%; height: auto;">
 </p>
-<a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/advermorel.svg" alt="PyPI version"></a>
-
-# [ICLR 2026] SPREAD: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
-
-<!--
 <p align="center">
 <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/advermorel.svg" alt="PyPI version"></a>
+<a href="https://moospread.readthedocs.io">
+  <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
+</a>
 </p>
+<!--
+<a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/advermorel.svg" alt="PyPI version"></a>
 -->
+
+# [ICLR 2026] SPREAD: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 
 > SPREAD is a novel sampling-based approach for multi-objective optimization that leverages diffusion models to efficiently refine and generate well-spread Pareto front approximations. It combines the expressiveness of diffusion models with multi-objective optimization principles to achieve both high convergence to the Pareto front and excellent diversity across the objective space. SPREAD demonstrates competitive performance against state-of-the-art methods while providing a flexible framework for different optimization contexts.
 
@@ -74,11 +76,10 @@ This will train a diffusion-based multi-objective solver, approximate the Pareto
 
 ---
 
-<!--
+
 ### 📚 Next steps
 
-For more advanced examples (offline mode, Bayesian mode, custom problems), see the full [documentation](https://moospread.readthedocs.io/en/latest/).
--->
+For more advanced examples (offline mode, mobo mode, tutorials), see the full [documentation](https://moospread.readthedocs.io/en/latest/).
 
 ## 🔬 Experiments
 
