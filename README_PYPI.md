@@ -8,6 +8,20 @@
 </p>
 -->
 
+<p align="center">
+  <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/moospread.svg" alt="PyPI version"></a>
+  <a href="https://moospread.readthedocs.io">
+  <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
+</a>
+</p>
+<div align="center">
+    <h3>
+      <a href="https://pypi.org/project/moospread/">Installation</a> |
+      <a href="https://moospread.readthedocs.io/en/latest/">Documentation</a> | 
+      <a href="https://arxiv.org/pdf/2509.21058">Paper</a>
+    </h3>
+</div>
+
 # SPREAD: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 
 > SPREAD is a novel sampling-based approach for multi-objective optimization that leverages diffusion models to efficiently refine and generate well-spread Pareto front approximations. It combines the expressiveness of diffusion models with multi-objective optimization principles to achieve both high convergence to the Pareto front and excellent diversity across the objective space. SPREAD demonstrates competitive performance against state-of-the-art methods while providing a flexible framework for different optimization contexts.
