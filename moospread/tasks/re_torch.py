@@ -10,7 +10,7 @@ import numpy as np
 # Note: For the sake of differentiability, we will use the strict bounds:
 # - Lower bound: xl + 1e-6 (instead of xl)
 # - Upper bound: xu - 1e-6 (instead of xu)
-# ref_point: The default reference points are suitable for the "online" mode.
+# ref_point: The default reference points are suitable for the "offline" mode.
 
 class RE21(PymooProblemTorch):
     def __init__(self, path = None, ref_point=None, **kwargs):
@@ -27,6 +27,7 @@ class RE21(PymooProblemTorch):
                          vtype=float, **kwargs)
         if ref_point is None:
             self.ref_point = [3144.44, 0.05]
+            # self.ref_point = [3144.44, 0.05] # suitable for "online" mode
         else:
             self.ref_point = ref_point
             
@@ -86,7 +87,8 @@ class RE33(PymooProblemTorch):
                          xu=torch.tensor([80.0, 110.0, 3000.0, 20.0])- 1e-6,
                          vtype=float, **kwargs)
         if ref_point is None:
-            self.ref_point = [5.01, 9.84, 4.30]
+            self.ref_point = [8.01,    8.84, 2343.30]
+            # self.ref_point = [5.01, 9.84, 4.30] # suitable for "online" mode
         else:
             self.ref_point = ref_point
             
@@ -162,7 +164,8 @@ class RE34(PymooProblemTorch):
                          xu=torch.full((5,), 3.0) - 1e-6,
                          vtype=float, **kwargs)
         if ref_point is None:
-            self.ref_point = [1.86472022e+03, 1.18199394e+01, 2.90399938e-01]
+            self.ref_point = [1702.52, 11.68, 0.26]
+            # self.ref_point = [1.86472022e+03, 1.18199394e+01, 2.90399938e-01] # suitable for "online" mode
         else:
             self.ref_point = ref_point
             
@@ -246,7 +249,8 @@ class RE37(PymooProblemTorch):
                          xu=torch.ones(4) - 1e-6,
                          vtype=float, **kwargs)
         if ref_point is None:
-            self.ref_point = [1.1022, 1.20726899, 1.20318656]
+            self.ref_point = [0.99, 0.96, 0.99]
+            # self.ref_point = [1.1022, 1.20726899, 1.20318656] # suitable for "online" mode
         else:
             self.ref_point = ref_point
             
@@ -342,7 +346,8 @@ class RE41(PymooProblemTorch):
                          xu=torch.tensor([1.5, 1.35, 1.5, 1.5, 2.625, 1.2, 1.2], dtype=torch.float) - 1e-6,
                          vtype=float, **kwargs)
         if ref_point is None:
-            self.ref_point = [47.04480682,  4.86997366, 14.40049127, 10.3941957 ]
+            self.ref_point = [42.65,  4.43, 13.08, 13.45]
+            # self.ref_point = [47.04480682,  4.86997366, 14.40049127, 10.3941957 ] # suitable for "online" mode
         else:
             self.ref_point = ref_point
             
