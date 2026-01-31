@@ -87,9 +87,8 @@ class SPREAD:
         if self.mode == "bayesian":
             self.mobo_coef_lcb = mobo_coef_lcb
         
-
         self.xi_shift = xi_shift
-        self.model_dir = model_dir
+        self.model_dir = model_dir+f"/{self.problem.__class__.__name__}_{self.mode}"
         os.makedirs(self.model_dir, exist_ok=True)
         
         self.train_func_surrogate = train_func_surrogate
@@ -248,7 +247,7 @@ class SPREAD:
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
                  iterative_plot=True, plot_period=100, 
                  plot_dataset=False, plot_population=False,
-                 elev=30, azim=45,
+                 elev=30, azim=45, legend=False,
                  max_backtracks=100, label=None, save_results=True,
                  load_models=False,
                  samples_store_path="./samples_dir/",
@@ -300,7 +299,7 @@ class SPREAD:
                  use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
                  iterative_plot=iterative_plot, plot_period=plot_period, 
                  plot_dataset=plot_dataset, plot_population=plot_population,
-                 elev=elev, azim=azim,
+                 elev=elev, azim=azim, legend=legend,
                  max_backtracks=max_backtracks, label=label,
                  save_results=save_results,
                  samples_store_path=samples_store_path,
@@ -395,7 +394,7 @@ class SPREAD:
                                             use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
                                             iterative_plot=iterative_plot, plot_period=plot_period,
                                             plot_dataset=plot_dataset, plot_population=plot_population,
-                                            elev=elev, azim=azim,
+                                            elev=elev, azim=azim, legend=legend,
                                             max_backtracks=max_backtracks, label=label,
                                             samples_store_path=samples_store_path,
                                             images_store_path=images_store_path,
@@ -732,7 +731,7 @@ class SPREAD:
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
                  iterative_plot=True, plot_period=100, 
                  plot_dataset=False, plot_population=False,
-                 elev=30, azim=45,
+                 elev=30, azim=45, legend=False,
                  max_backtracks=25, label=None,
                  samples_store_path="./samples_dir/",
                  images_store_path="./images_dir/",
@@ -843,7 +842,7 @@ class SPREAD:
                                        extra=pareto_front,
                                        plot_dataset=plot_dataset,
                                        dataset = self.dataset,
-                                       elev=elev, azim=azim,
+                                       elev=elev, azim=azim, legend=legend,
                                        label=label, images_store_path=images_store_path)
                     else:
                         self.plot_pareto_front(list_fi,  self.timesteps,
@@ -851,7 +850,7 @@ class SPREAD:
                                                 extra=pareto_front,
                                                 plot_dataset=plot_dataset,
                                                 pop=list_fi_pop,
-                                                elev=elev, azim=azim,
+                                                elev=elev, azim=azim, legend=legend,
                                                 label=label, images_store_path=images_store_path)
 
         prev_pf_points = None
@@ -1006,7 +1005,7 @@ class SPREAD:
                                                    extra= pareto_front,
                                                    plot_dataset=plot_dataset,
                                                    dataset = self.dataset,
-                                                   elev=elev, azim=azim,
+                                                   elev=elev, azim=azim, legend=legend,
                                                    label=label, images_store_path=images_store_path)
                             else:
                                 self.plot_pareto_front(list_fi, t, 
@@ -1014,7 +1013,7 @@ class SPREAD:
                                                     extra= pareto_front,
                                                     pop=list_fi_pop if plot_population else None,
                                                     plot_dataset=plot_dataset,
-                                                    elev=elev, azim=azim,
+                                                    elev=elev, azim=azim, legend=legend,
                                                     label=label, images_store_path=images_store_path)
                         
 
@@ -1849,7 +1848,7 @@ class SPREAD:
                           label=None,
                           plot_dataset=False,
                           pop=None,
-                          elev=30, azim=45,
+                          elev=30, azim=45, legend=False,
                           images_store_path="./images_dir/"):
         name = (
             "spread"
@@ -1873,34 +1872,44 @@ class SPREAD:
             return None
 
         elif len(list_fi) == 2:
+            fig, ax = plt.subplots()
             if plot_dataset and (self.dataset) is not None:
                 _, Y = self.dataset
                 # Denormalize the data
                 Y = self.offline_denormalization(Y,
                                                 self.y_meanormin,
                                                 self.y_stdormax)
-                plt.scatter(Y[:, 0], Y[:, 1],
-                            c="violet", s=5, alpha=1.0,)
-                            # label="Training data points")
+                ax.scatter(Y[:, 0], Y[:, 1],
+                            c="violet", s=5, alpha=1.0,
+                            label="Training Data")
                             
             if extra is not None:
                 f1, f2 = extra
-                plt.scatter(f1, f2, c="yellow", s = 5, alpha=1.0,)
-                            # label="Pareto optimal points")
+                ax.scatter(f1, f2, c="yellow", s = 5, alpha=1.0,
+                            label="Pareto Optimal")
                             
             if pop is not None:
                 f_pop1, f_pop2 = pop
-                plt.scatter(f_pop1, f_pop2, c="blue", s=10, alpha=1.0,)
-                            # label="Population points")
+                ax.scatter(f_pop1, f_pop2, c="blue", s=10, alpha=1.0,
+                            label="Gen Population")
                 
             f1, f2 = list_fi
-            plt.scatter(f1, f2, c="red", s=10, alpha=1.0,)
-                        # label="Generated optimal points")
+            ax.scatter(f1, f2, c="red", s=10, alpha=1.0,
+                        label="Gen Optimal")
             
-
-            plt.xlabel("$f_1$", fontsize=14)
-            plt.ylabel("$f_2$", fontsize=14)
-            plt.title(f"Reverse Time Step: {t}", fontsize=14)
+            ax.set_xlabel("$f_1$", fontsize=14)
+            ax.set_ylabel("$f_2$", fontsize=14)
+            ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
+            ax.text(
+                -0.15, 0.5,
+                self.problem.__class__.__name__.upper() + f"({self.mode})",
+                transform=ax.transAxes,      
+                va='center',
+                ha='center',
+                rotation='vertical',
+                fontsize=20,
+                fontweight='bold'
+            )
 
         elif len(list_fi) == 3:
             fig = plt.figure()
@@ -1913,29 +1922,38 @@ class SPREAD:
                                                 self.y_meanormin,
                                                 self.y_stdormax)
                 ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2],
-                           c="violet", s=5, alpha=1.0,)
-                        #    label="Training data points")
+                           c="violet", s=5, alpha=1.0,
+                           label="Training Data")
             
             if extra is not None:
                 f1, f2, f3 = extra
-                ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,)
-                        #    label="Pareto optimal points")
+                ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,
+                           label="Pareto Optimal")
                         
             if pop is not None:
                 f_pop1, f_pop2, f_pop3 = pop
-                ax.scatter(f_pop1, f_pop2, f_pop3, c="blue", s=10, alpha=1.0,)
-                        #    label="Population points")
+                ax.scatter(f_pop1, f_pop2, f_pop3, c="blue", s=10, alpha=1.0,
+                           label="Gen Population")
                 
             f1, f2, f3 = list_fi
-            ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0,)
-                    #    label="Generated optimal points")
-
+            ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0,
+                       label="Gen Optimal")
             
             ax.set_xlabel("$f_1$", fontsize=14)
             ax.set_ylabel("$f_2$", fontsize=14)
             ax.set_zlabel("$f_3$", fontsize=14)
             ax.view_init(elev=elev, azim=azim)
             ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
+            ax.text(
+                -0.15, 0.5,
+                self.problem.__class__.__name__.upper() + f"({self.mode})",
+                transform=ax.transAxes,      
+                va='center',
+                ha='center',
+                rotation='vertical',
+                fontsize=20,
+                fontweight='bold'
+            )
 
         img_dir = f"{images_store_path}/{self.problem.__class__.__name__}_{self.mode}"
         if label is not None:
@@ -1943,7 +1961,8 @@ class SPREAD:
         if not os.path.exists(img_dir):
             os.makedirs(img_dir)
 
-        # plt.legend(fontsize=12)
+        if legend:
+            plt.legend(fontsize=12)
         
         plt.savefig(
                 f"{img_dir}/{name}.jpg",
