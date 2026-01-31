@@ -1901,7 +1901,7 @@ class SPREAD:
             ax.set_ylabel("$f_2$", fontsize=14)
             ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
             ax.text(
-                -0.15, 0.5,
+                -0.17, 0.5,
                 self.problem.__class__.__name__.upper() + f"({self.mode})",
                 transform=ax.transAxes,      
                 va='center',
@@ -1944,10 +1944,10 @@ class SPREAD:
             ax.set_zlabel("$f_3$", fontsize=14)
             ax.view_init(elev=elev, azim=azim)
             ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
-            ax.text(
-                -0.15, 0.5,
+            ax.text2D(
+                -0.17, 0.5,
                 self.problem.__class__.__name__.upper() + f"({self.mode})",
-                transform=ax.transAxes,      
+                transform=ax.transAxes,
                 va='center',
                 ha='center',
                 rotation='vertical',
