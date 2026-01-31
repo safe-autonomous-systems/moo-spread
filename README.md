@@ -7,6 +7,13 @@
   <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
 </a>
 </p>
+<div align="center">
+    <h3>
+      <a href="https://pypi.org/project/moospread/">Installation</a> |
+      <a href="https://moospread.readthedocs.io/en/latest/">Documentation</a> | 
+      <a href="https://arxiv.org/pdf/2509.21058">Paper</a>
+    </h3>
+</div>
 <!--
 <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/advermorel.svg" alt="PyPI version"></a>
 -->
