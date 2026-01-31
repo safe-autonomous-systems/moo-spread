@@ -11,6 +11,7 @@ moospread.egg-info/dependency_links.txt
 moospread.egg-info/requires.txt
 moospread.egg-info/top_level.txt
 moospread/tasks/__init__.py
+moospread/tasks/bo_torch.py
 moospread/tasks/dtlz_torch.py
 moospread/tasks/mw_torch.py
 moospread/tasks/re_torch.py
