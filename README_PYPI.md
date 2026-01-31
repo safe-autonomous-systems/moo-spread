@@ -18,7 +18,7 @@
     <h3>
       <a href="https://pypi.org/project/moospread/">Installation</a> |
       <a href="https://moospread.readthedocs.io/en/latest/">Documentation</a> | 
-      <a href="https://arxiv.org/pdf/2509.21058">Paper</a>
+      <a href="https://openreview.net/forum?id=4731mIqv89">Paper</a>
     </h3>
 </div>
 
