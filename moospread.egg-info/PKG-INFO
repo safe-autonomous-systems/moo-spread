@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: moospread
-Version: 0.1.3
+Version: 0.1.4
 Summary: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 Author-email: Sedjro Salomon Hotegni <salomon.hotegni@aims.ac.rw>
 Maintainer-email: Sedjro Salomon Hotegni <salomon.hotegni@tu-dortmund.de>
@@ -62,6 +62,20 @@ Dynamic: license-file
 <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/advermorel.svg" alt="PyPI version"></a>
 </p>
 -->
+
+<p align="center">
+  <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/moospread.svg" alt="PyPI version"></a>
+  <a href="https://moospread.readthedocs.io">
+  <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
+</a>
+</p>
+<div align="center">
+    <h3>
+      <a href="https://pypi.org/project/moospread/">Installation</a> |
+      <a href="https://moospread.readthedocs.io/en/latest/">Documentation</a> | 
+      <a href="https://arxiv.org/pdf/2509.21058">Paper</a>
+    </h3>
+</div>
 
 # SPREAD: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 
@@ -128,11 +142,10 @@ This will train a diffusion-based multi-objective solver, approximate the Pareto
 
 ---
 
-<!--
+
 ### 📚 Next steps
 
-For more advanced examples (offline mode, Bayesian mode, custom problems), see the full [documentation](https://moospread.readthedocs.io/en/latest/).
--->
+For more advanced examples (offline mode, mobo mode, tutorials), see the full [documentation](https://moospread.readthedocs.io/en/latest/).
 
 ## Citation
 If you find `moospread` useful in your research, please consider citing:
