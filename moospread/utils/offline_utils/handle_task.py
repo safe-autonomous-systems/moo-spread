@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 def one_hot(a: torch.Tensor, num_classes: int) -> torch.Tensor:
@@ -139,7 +139,9 @@ def offdata_to_integers(x: torch.Tensor, num_classes_on_each_position: List[int]
     return torch.cat(integers, dim=1)
 
 
-def offdata_z_score_normalize(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def offdata_z_score_normalize(x: torch.Tensor, 
+                              mean: Optional[torch.Tensor] = None,
+                              std: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Z-score normalize features columnwise (match NumPy semantics).
 
     Args:
@@ -150,11 +152,17 @@ def offdata_z_score_normalize(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tens
     if not torch.is_floating_point(x):
         raise ValueError("cannot normalize discrete design values")
 
+    if mean is not None and std is not None:
+        x_norm = (x - mean.to(x.device)) / std.to(x.device)
+        return x_norm, mean, std
+    
     mean = torch.mean(x, dim=0)
     # NumPy's np.std uses population std (ddof=0) by default -> unbiased=False
     std = torch.std(x, dim=0, unbiased=False)
-    x_norm = (x - mean) / std
-    return x_norm, mean, std
+    eps = 1e-6
+    std_safe = torch.clamp(std, min=eps)
+    x_norm = (x - mean) / std_safe
+    return x_norm, mean, std_safe
 
 
 def offdata_z_score_denormalize(x: torch.Tensor, 
@@ -174,7 +182,9 @@ def offdata_z_score_denormalize(x: torch.Tensor,
     return x * x_std.to(x.device) + x_mean.to(x.device)
 
 
-def offdata_min_max_normalize(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def offdata_min_max_normalize(x: torch.Tensor,
+                              min_val: Optional[torch.Tensor] = None,
+                              max_val: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Min-max normalize features columnwise.
 
     Args:
@@ -182,10 +192,17 @@ def offdata_min_max_normalize(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tens
     Returns:
         (x_norm, x_min, x_max)
     """
+    
+    if min_val is not None and max_val is not None:
+        x_norm = (x - min_val.to(x.device)) / (max_val.to(x.device) - min_val.to(x.device))
+        return x_norm, min_val, max_val
+    
     x_min = torch.min(x, dim=0).values
     x_max = torch.max(x, dim=0).values
-    x_norm = (x - x_min) / (x_max - x_min)
-    return x_norm, x_min, x_max
+    eps = 1e-6
+    x_max_x_min_safe = torch.clamp(x_max - x_min, min=eps)
+    x_norm = (x - x_min) / x_max_x_min_safe
+    return x_norm, x_max-x_max_x_min_safe, x_max
 
 
 def offdata_min_max_denormalize(x: torch.Tensor, 
