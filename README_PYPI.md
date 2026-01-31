@@ -87,11 +87,10 @@ This will train a diffusion-based multi-objective solver, approximate the Pareto
 
 ---
 
-<!--
+
 ### 📚 Next steps
 
-For more advanced examples (offline mode, Bayesian mode, custom problems), see the full [documentation](https://moospread.readthedocs.io/en/latest/).
--->
+For more advanced examples (offline mode, mobo mode, tutorials), see the full [documentation](https://moospread.readthedocs.io/en/latest/).
 
 ## Citation
 If you find `moospread` useful in your research, please consider citing:
