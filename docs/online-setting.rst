@@ -65,3 +65,31 @@ If intermediate Pareto fronts are not needed, simply set ``iterative_plot=False`
        samples_store_path="./samples_dir/",
        images_store_path="./images_dir/"
    )
+
+Since in this example we enable ``iterative_plot``, we can visualize the generative process using the images saved in ``images_store_path`` (see :ref:`visualization`).
+
+.. code-block:: python
+
+   solver.create_video(
+       image_folder="images_dir/ZDT2_online",
+       output_video="videos_dir/ZDT2_online.mp4",
+       total_duration_s=20.0,
+       first_transition_s=2.0,
+       fps=30,
+   )
+
+.. list-table::
+   :widths: 50 50
+   :align: center
+
+   * - .. figure:: _static/ZDT2_n200_online.gif
+          :width: 300px
+
+          Generative process
+
+     - .. figure:: _static/spread_ZDT2_T=5000_N=200_t=0_seed=2026_online.jpg
+          :width: 300px
+
+          Final generated Pareto front
+
+
