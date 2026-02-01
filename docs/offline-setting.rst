@@ -58,8 +58,8 @@ Valid values are ``"z_score"``, ``"min_max"``, and ``None``. The default is ``"z
        train_tol=100,
        train_tol_surrogate=100,
        mode="offline",
-       model_dir="./model_dir",
-       proxies_store_path="./proxies_dir",
+       model_dir="./model_dir/",
+       proxies_store_path="./proxies_dir/",
        seed=2026,
        verbose=True
    )
