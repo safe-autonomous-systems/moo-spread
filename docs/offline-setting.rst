@@ -96,9 +96,54 @@ When enabled, ``plot_dataset=True`` allows you to display the static dataset alo
        lr_inner=0.9,
        iterative_plot=True,
        plot_period=10,
-       plot_dataset=True,
+       plot_dataset=False,
        max_backtracks=25,
        save_results=True,
        samples_store_path="./samples_dir/",
        images_store_path="./images_dir/"
    )
+
+Since in this example we enable ``iterative_plot``, we can visualize the generative process using the images saved in ``images_store_path`` (see :ref:`visualization`).
+
+.. code-block:: python
+
+   solver.create_video(
+       image_folder="images_dir/RE37_offline",
+       output_video="videos_dir/RE37_offline.mp4",
+       total_duration_s=20.0,
+       first_transition_s=2.0,
+       fps=30,
+   )
+
+.. list-table::
+   :widths: 50 50
+   :align: center
+
+   * - .. figure:: _static/RE37_n200_offline.gif
+          :width: 300px
+
+          Generative process
+
+     - .. figure:: _static/spread_RE37_T=1000_N=200_t=0_seed=2026_offline.jpg
+          :width: 300px
+
+          Final generated Pareto front
+
+For 3-objective problems, plotting the training data may obscure the generated points.  
+Therefore, in this example, we set ``plot_dataset=False`` for the RE37 problem.
+
+Additionally, we visualize the generative process for the bi-objective RE21 problem, where the training data points are also displayed:
+
+.. list-table::
+   :widths: 50 50
+   :align: center
+
+   * - .. figure:: _static/RE21_n200_offline.gif
+          :width: 300px
+
+          Generative process
+
+     - .. figure:: _static/spread_RE21_T=1000_N=200_t=0_seed=2026_offline.jpg
+          :width: 300px
+
+          Final generated Pareto front
