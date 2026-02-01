@@ -42,7 +42,7 @@ By default, ``moospread`` uses Gaussian processes as surrogate models.
        num_epochs=1000,
        train_tol=100,
        mode="bayesian",
-       model_dir="./model_dir",
+       model_dir="./model_dir/",
        seed=2026,
        verbose=True
    )
