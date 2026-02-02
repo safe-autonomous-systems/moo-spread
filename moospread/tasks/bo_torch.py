@@ -35,13 +35,17 @@ class BraninCurrin(PymooProblemTorch):
 
     """
     
-    def __init__(self, path = None, ref_point=None, negate=True, **kwargs):
+    def __init__(self, path = None, ref_point=None, negate=False, **kwargs):
         super().__init__(n_var=2, n_obj=2, 
                          xl=torch.zeros(2, dtype=torch.float) + 1e-6,
                          xu=torch.ones(2, dtype=torch.float) - 1e-6,
                          vtype=float, **kwargs)
+        
+        self.negate = negate
         if ref_point is None:
             self.ref_point = [18.0, 6.0]
+            if self.negate:
+                self.ref_point = [-val for val in self.ref_point]
         else:
             self.ref_point = ref_point
             
@@ -50,7 +54,7 @@ class BraninCurrin(PymooProblemTorch):
         
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
         if self.path is not None:
-            front = np.loadtxt(self.path)
+            front = np.load(self.path)
             return torch.from_numpy(front).to(self.device)
         else:
             return None
@@ -85,6 +89,8 @@ class BraninCurrin(PymooProblemTorch):
         branin = self._rescaled_branin(X=X)
         currin = self._currin(X=X)
         out["F"] = torch.stack([branin, currin], dim=-1)
+        if self.negate:
+            out["F"] = -out["F"]
     
 class Penicillin(PymooProblemTorch):
     r"""A penicillin production simulator from [Liang2021]_.
@@ -125,13 +131,16 @@ class Penicillin(PymooProblemTorch):
     R = 1.9872  # CAL/(MOL K)
     V_max = 180.0
     
-    def __init__(self, path = None, ref_point=None, negate=True, **kwargs):
+    def __init__(self, path = None, ref_point=None, negate=False, **kwargs):
         super().__init__(n_var=7, n_obj=3, 
                          xl=torch.tensor([60.0, 0.05, 293.0, 0.05, 0.01, 500.0, 5.0], dtype=torch.float) + 1e-6,
                          xu=torch.tensor([120.0, 18.0, 303.0, 18.0, 0.5, 700.0, 6.5], dtype=torch.float) - 1e-6,
                          vtype=float, **kwargs)
+        self.negate = negate
         if ref_point is None:
             self.ref_point = [25.935, 57.612, 935.5]
+            if self.negate:
+                self.ref_point = [-val for val in self.ref_point]
         else:
             self.ref_point = ref_point
             
@@ -140,7 +149,7 @@ class Penicillin(PymooProblemTorch):
         
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
         if self.path is not None:
-            front = np.loadtxt(self.path)
+            front = np.load(self.path)
             return torch.from_numpy(front).to(self.device)
         else:
             return None
@@ -222,10 +231,11 @@ class Penicillin(PymooProblemTorch):
     def _evaluate(self, X: torch.Tensor, out: dict, *args, **kwargs) -> None:
         # This uses in-place operations. Hence, the clone is to avoid modifying
         # the original X in-place.
-        out["F"] = self.penicillin_vectorized(X.view(-1, self.dim).clone()).view(
-            *X.shape[:-1], self.num_objectives
+        out["F"] = self.penicillin_vectorized(X.view(-1, self.n_var).clone()).view(
+            *X.shape[:-1], self.n_obj
         )
-        
+        if self.negate:
+            out["F"] = -out["F"]
 
 class VehicleSafety(PymooProblemTorch):
     r"""Optimize Vehicle crash-worthiness.
@@ -239,13 +249,16 @@ class VehicleSafety(PymooProblemTorch):
     pareto front from [Tanabe2020]_.
     """
     
-    def __init__(self, path = None, ref_point=None, negate=True, **kwargs):
+    def __init__(self, path = None, ref_point=None, negate=False, **kwargs):
         super().__init__(n_var=5, n_obj=3, 
                          xl=torch.ones(5, dtype=torch.float) + 1e-6,
                          xu=3*torch.ones(5, dtype=torch.float) - 1e-6,
                          vtype=float, **kwargs)
+        self.negate = negate
         if ref_point is None:
             self.ref_point = [1864.72022, 11.81993945, 0.2903999384]
+            if self.negate:
+                self.ref_point = [-val for val in self.ref_point]
         else:
             self.ref_point = ref_point
             
@@ -254,7 +267,7 @@ class VehicleSafety(PymooProblemTorch):
         
     def _calc_pareto_front(self, n_pareto_points: int = 100) -> torch.Tensor:
         if self.path is not None:
-            front = np.loadtxt(self.path)
+            front = np.load(self.path)
             return torch.from_numpy(front).to(self.device)
         else:
             return None
@@ -298,3 +311,5 @@ class VehicleSafety(PymooProblemTorch):
         )
         f_X = torch.cat([f1, f2, f3], dim=-1)
         out["F"] = f_X
+        if self.negate:
+            out["F"] = -out["F"]
