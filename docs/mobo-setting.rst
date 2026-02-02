@@ -77,7 +77,7 @@ If intermediate Pareto fronts are not required, set ``iterative_plot=False``.
 .. code-block:: python
 
    # Solve the problem
-   res_x, res_y = solver.solve(
+   result_Xy, hv_all_value = solver.solve(
        rho_scale_gamma=0.9,
        eta_init=0.9,
        lr_inner=0.9,
