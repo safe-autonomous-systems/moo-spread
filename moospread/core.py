@@ -53,8 +53,8 @@ class SPREAD:
                  train_tol: int = 100,
                  train_tol_surrogate: int = 100,
                  mobo_coef_lcb=0.1,
-                 model_dir: str = "./model_dir",
-                 proxies_store_path: str = "./proxies_dir",
+                 model_dir: str = "./model_dir/",
+                 proxies_store_path: str = "./proxies_dir/",
                  device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
                  seed: int = 0,
                  offline_global_clamping: bool = False,
@@ -88,7 +88,7 @@ class SPREAD:
             self.mobo_coef_lcb = mobo_coef_lcb
         
         self.xi_shift = xi_shift
-        self.model_dir = model_dir+f"/{self.problem.__class__.__name__}_{self.mode}"
+        self.model_dir = model_dir+f"{self.problem.__class__.__name__}_{self.mode}"
         os.makedirs(self.model_dir, exist_ok=True)
         
         self.train_func_surrogate = train_func_surrogate
@@ -309,12 +309,35 @@ class SPREAD:
             
         elif self.mode == "bayesian":
             self.verbose = False
+            all_selected_batch_y = []
             hv_all_value = []
             # initialize n_init solutions 
             x_init = lhs_no_evaluation(self.problem.n_var, 
                                        n_init_mobo)
             x_init = torch.from_numpy(x_init).float().to(self.device)
             y_init = self.problem.evaluate(x_init).detach().cpu().numpy()
+            
+            if iterative_plot:
+                list_fi_init = [y_init[:, i] for i in range(y_init.shape[1])]
+                pareto_front = None
+                if self.problem.pareto_front() is not None:
+                    pareto_front = self.problem.pareto_front()
+                    pareto_front = [pareto_front[:, i] for i in range(self.problem.n_obj)]
+                if self.plot_func is not None:
+                    self.plot_func(list_fi=None, t=0,
+                                            num_points_sample=batch_select_mobo,
+                                        extra=pareto_front,
+                                        dataset = self.dataset,
+                                        pop=list_fi_init,
+                                        elev=elev, azim=azim, legend=legend, mode=self.mode,
+                                        label=label, images_store_path=images_store_path)
+                else:
+                    self.plot_pareto_front(list_fi=None, t=0,
+                                            num_points_sample=batch_select_mobo,
+                                                    extra=pareto_front,
+                                                    pop=list_fi_init,
+                                                    elev=elev, azim=azim, legend=legend,
+                                                    label=label, images_store_path=images_store_path)
 
             # initialize dominance-classifier for non-dominance relation
             p_rel_map, s_rel_map = init_dom_rel_map(300)
@@ -416,6 +439,7 @@ class SPREAD:
                         
                     pop_size_used = X_psl.shape[0]
                         
+
                     # Mutate the new offspring
                     X_psl = pm_mutation(X_psl, [self.problem.xl.detach().cpu().numpy(), 
                                                     self.problem.xu.detach().cpu().numpy()])
@@ -451,7 +475,7 @@ class SPREAD:
                             if hv_value_subset > best_hv_value:
                                 best_hv_value = hv_value_subset
                                 best_subset = [k]
-
+                                
                         Y_p = np.vstack([Y_p, Y_candidate_mean[best_subset]])
                         best_subset_list.append(best_subset)
                     
@@ -460,7 +484,10 @@ class SPREAD:
                     X_candidate = X_psl
                     X_new = X_candidate[best_subset_list]
                     Y_new = self.problem.evaluate(torch.from_numpy(X_new).float().to(self.device)).detach().cpu().numpy()
-                        
+                    
+                    list_fi_new = [Y_new[:, i] for i in range(Y_new.shape[1])]
+                    all_selected_batch_y.append(list_fi_new)
+                    
                     Y_new = torch.tensor(Y_new).to(self.device)
                     X_new = torch.tensor(X_new).to(self.device)
 
@@ -480,6 +507,23 @@ class SPREAD:
                         
                     hv_text = f"{hv_value:.4e}" 
                     evaluated = evaluated + batch_select_mobo
+                    
+                    if iterative_plot:
+                        if self.plot_func is not None:
+                            self.plot_func(list_fi=all_selected_batch_y, t=k_iter+1,
+                                                    num_points_sample=batch_select_mobo,
+                                                extra=pareto_front,
+                                                dataset = self.dataset,
+                                                pop=list_fi_init,
+                                                elev=elev, azim=azim, legend=legend, mode=self.mode,
+                                                label=label, images_store_path=images_store_path)
+                        else:
+                            self.plot_pareto_front(list_fi=all_selected_batch_y, t=k_iter+1,
+                                                    num_points_sample=batch_select_mobo,
+                                                            extra=pareto_front,
+                                                            pop=list_fi_init,
+                                                            elev=elev, azim=azim, legend=legend,
+                                                            label=label, images_store_path=images_store_path)
 
                     #### DECISION TO SWITCH OPERATOR ####
                     if use_escape_local_mobo:
@@ -558,7 +602,7 @@ class SPREAD:
             with open(outfile, "wb") as f:
                 pickle.dump(hv_all_value, f)
                 
-            return X, Y, hv_all_value
+            return [X, Y], hv_all_value
 
         
     def train(self, 
@@ -798,12 +842,12 @@ class SPREAD:
                         # Denormalize the points before plotting
                         res_x_t = pf_points.clone().detach()
                         res_x_t = self.offline_denormalization(res_x_t,
-                                                                    self.X_meanormin, 
-                                                                    self.X_stdormax)
+                                                                self.X_meanormin, 
+                                                                self.X_stdormax)
                         res_pop = pf_population.clone().detach()
                         res_pop = self.offline_denormalization(res_pop,
-                                                                    self.X_meanormin, 
-                                                                    self.X_stdormax)
+                                                                self.X_meanormin, 
+                                                                self.X_stdormax)
                         norm_xl, norm_xu = self.problem.bounds()
                         xl, xu = self.problem.original_bounds
                         self.problem.xl = xl
@@ -842,7 +886,8 @@ class SPREAD:
                                        extra=pareto_front,
                                        plot_dataset=plot_dataset,
                                        dataset = self.dataset,
-                                       elev=elev, azim=azim, legend=legend,
+                                       pop=list_fi_pop,
+                                       elev=elev, azim=azim, legend=legend, mode=self.mode,
                                        label=label, images_store_path=images_store_path)
                     else:
                         self.plot_pareto_front(list_fi,  self.timesteps,
@@ -927,7 +972,7 @@ class SPREAD:
                     pf_population,
                     keep_shape=False
                 )
-           
+
                 if prev_pf_points is not None:
                     pf_points = torch.cat((prev_pf_points, pf_points), dim=0)
                     if self.mode != "bayesian":
@@ -935,6 +980,7 @@ class SPREAD:
                                         pf_points,
                                         keep_shape=False,
                                     )
+
                     if len(pf_points) > num_points_sample:
                         pf_points = self.select_top_n_candidates(
                                             pf_points,
@@ -946,76 +992,73 @@ class SPREAD:
                 prev_pf_points = pf_points
                 num_optimal_points = len(pf_points)
                     
-                if iterative_plot and (not is_pass_function(self.problem._evaluate)):
-                    if self.problem.n_obj <= 3:
-                        if (t % plot_period == 0) or (t ==  self.timesteps - 1):
-                            if self.mode == "offline":
-                                # Denormalize the points before plotting
-                                res_x_t = pf_points.clone().detach()
-                                res_x_t = self.offline_denormalization(res_x_t,
-                                                                            self.X_meanormin, 
-                                                                            self.X_stdormax)
-                                res_pop = pf_population.clone().detach()
-                                res_pop = self.offline_denormalization(res_pop,
-                                                                            self.X_meanormin, 
-                                                                            self.X_stdormax)
-                                norm_xl, norm_xu = self.problem.bounds()
-                                xl, xu = self.problem.original_bounds
-                                self.problem.xl = xl
-                                self.problem.xu = xu
-                                if self.problem.is_discrete:
-                                    _, dim, n_classes = tuple(res_x_t.shape)
-                                    res_x_t = res_x_t.reshape(-1, dim, n_classes)
-                                    res_x_t = offdata_to_integers(res_x_t)
-                                    
-                                    _, dim_pop, n_classes_pop = tuple(res_pop.shape)
-                                    res_pop = res_pop.reshape(-1, dim_pop, n_classes_pop)
-                                    res_pop = offdata_to_integers(res_pop)
-                                if self.problem.is_sequence:
-                                    res_x_t = offdata_to_integers(res_x_t)
-                                    res_pop = offdata_to_integers(res_pop)
-                                # we need to evaluate the true objective functions for plotting
-                                list_fi =  self.objective_functions(res_x_t, 
-                                                                    evaluate_true=True).split(1, dim=1)
-                                list_fi_pop =  self.objective_functions(res_pop, 
+                if self.mode in ["online", "offline"]:
+                    if iterative_plot and (not is_pass_function(self.problem._evaluate)):
+                        if self.problem.n_obj <= 3:
+                            if (t % plot_period == 0) or (t ==  self.timesteps - 1):
+                                if self.mode == "offline":
+                                    # Denormalize the points before plotting
+                                    res_x_t = pf_points.clone().detach()
+                                    res_x_t = self.offline_denormalization(res_x_t,
+                                                                                self.X_meanormin, 
+                                                                                self.X_stdormax)
+                                    res_pop = pf_population.clone().detach()
+                                    res_pop = self.offline_denormalization(res_pop,
+                                                                                self.X_meanormin, 
+                                                                                self.X_stdormax)
+                                    norm_xl, norm_xu = self.problem.bounds()
+                                    xl, xu = self.problem.original_bounds
+                                    self.problem.xl = xl
+                                    self.problem.xu = xu
+                                    if self.problem.is_discrete:
+                                        _, dim, n_classes = tuple(res_x_t.shape)
+                                        res_x_t = res_x_t.reshape(-1, dim, n_classes)
+                                        res_x_t = offdata_to_integers(res_x_t)
+                                        
+                                        _, dim_pop, n_classes_pop = tuple(res_pop.shape)
+                                        res_pop = res_pop.reshape(-1, dim_pop, n_classes_pop)
+                                        res_pop = offdata_to_integers(res_pop)
+                                    if self.problem.is_sequence:
+                                        res_x_t = offdata_to_integers(res_x_t)
+                                        res_pop = offdata_to_integers(res_pop)
+                                    # we need to evaluate the true objective functions for plotting
+                                    list_fi =  self.objective_functions(res_x_t, 
                                                                         evaluate_true=True).split(1, dim=1)
-                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
-                                # restore the normalized bounds
-                                self.problem.xl = norm_xl
-                                self.problem.xu = norm_xu
-                            elif self.mode == "bayesian":
-                                # we need to evaluate the true objective functions for plotting
-                                list_fi = self.objective_functions(pf_points, evaluate_true=True).split(1, dim=1)
-                                list_fi_pop =  self.objective_functions(pf_population.detach(), evaluate_true=True).split(1, dim=1)
-                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
-                            else:
-                                list_fi = self.objective_functions(pf_points).split(1, dim=1)
-                                list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
-                                list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
-                            
-                            list_fi = [fi.detach().cpu().numpy() for fi in list_fi]
-                            pareto_front = None
-                            if self.problem.pareto_front() is not None:
-                                pareto_front = self.problem.pareto_front()
-                                pareto_front = [pareto_front[:, i] for i in range(self.problem.n_obj)]
+                                    list_fi_pop =  self.objective_functions(res_pop, 
+                                                                            evaluate_true=True).split(1, dim=1)
+                                    list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
+                                    # restore the normalized bounds
+                                    self.problem.xl = norm_xl
+                                    self.problem.xu = norm_xu
+                                else:
+                                    list_fi = self.objective_functions(pf_points).split(1, dim=1)
+                                    list_fi_pop =  self.objective_functions(pf_population.detach()).split(1, dim=1)
+                                    list_fi_pop = [fi.detach().cpu().numpy() for fi in list_fi_pop]
+                                
+                                list_fi = [fi.detach().cpu().numpy() for fi in list_fi]
+                                pareto_front = None
+                                if self.problem.pareto_front() is not None:
+                                    pareto_front = self.problem.pareto_front()
+                                    pareto_front = [pareto_front[:, i] for i in range(self.problem.n_obj)]
 
-                            if self.plot_func is not None:
-                                self.plot_func(list_fi, t, 
-                                                   num_points_sample,
-                                                   extra= pareto_front,
-                                                   plot_dataset=plot_dataset,
-                                                   dataset = self.dataset,
-                                                   elev=elev, azim=azim, legend=legend,
-                                                   label=label, images_store_path=images_store_path)
-                            else:
-                                self.plot_pareto_front(list_fi, t, 
+                                if self.plot_func is not None:
+                                    self.plot_func(list_fi, t, 
                                                     num_points_sample,
                                                     extra= pareto_front,
                                                     pop=list_fi_pop if plot_population else None,
                                                     plot_dataset=plot_dataset,
-                                                    elev=elev, azim=azim, legend=legend,
+                                                    dataset = self.dataset,
+                                                    elev=elev, azim=azim, legend=legend, mode=self.mode,
                                                     label=label, images_store_path=images_store_path)
-                        
+                                else:
+                                    self.plot_pareto_front(list_fi, t, 
+                                                        num_points_sample,
+                                                        extra= pareto_front,
+                                                        pop=list_fi_pop if plot_population else None,
+                                                        plot_dataset=plot_dataset,
+                                                        elev=elev, azim=azim, legend=legend,
+                                                        label=label, images_store_path=images_store_path)
+                            
 
                 x_t = x_t.detach()
                 pbar.set_postfix({
@@ -1246,7 +1289,7 @@ class SPREAD:
         std_dev = torch.sqrt(beta_t)
         z = torch.randn_like(x_t) if t > 0 else 0.0  # No noise for the final step
         x_t = mean + std_dev * z
-
+        
         #### Pareto Guidance step
         if self.problem.need_repair:
             x_t.data = self.repair_bounds(x_t.data.clone())
@@ -1300,10 +1343,13 @@ class SPREAD:
             rho_scale_gamma=rho_scale_gamma
         )
 
-        h_tilde = torch.nan_to_num(h_tilde, 
-                                   nan=torch.nanmean(h_tilde), 
-                                   posinf=0.0, 
-                                   neginf=0.0)
+        # h_tilde = torch.nan_to_num(h_tilde, 
+        #                            nan=torch.nanmean(h_tilde), 
+        #                            posinf=0.0, 
+        #                            neginf=0.0)
+        finite = torch.isfinite(h_tilde)
+        fill = h_tilde[finite].mean() if finite.any() else h_tilde.new_tensor(0.0)
+        h_tilde = torch.where(finite, h_tilde, fill)
 
         x_t = x_t - eta * h_tilde
 
@@ -1866,94 +1912,160 @@ class SPREAD:
             + self.mode
         )
         if label is not None:
-            name += f"_{label}"
+            name += f"_{label}" 
 
-        if len(list_fi) > 3:
+        if self.problem.n_obj > 3:
             return None
+        
+        if self.mode != "bayesian":
+            if len(list_fi) == 2:
+                fig, ax = plt.subplots()
+                if plot_dataset and (self.dataset) is not None:
+                    _, Y = self.dataset
+                    # Denormalize the data
+                    Y = self.offline_denormalization(Y,
+                                                    self.y_meanormin,
+                                                    self.y_stdormax)
+                    ax.scatter(Y[:, 0], Y[:, 1],
+                                c="violet", s=5, alpha=1.0,
+                                label="Training Data")
+                                
+                if extra is not None:
+                    f1, f2 = extra
+                    ax.scatter(f1, f2, c="yellow", s = 5, alpha=1.0,
+                                label="Pareto Optimal")
+                                
+                if pop is not None:
+                    f_pop1, f_pop2 = pop
+                    ax.scatter(f_pop1, f_pop2, c="blue", s=10, alpha=1.0,
+                                label="Gen Population")
+                    
+                f1, f2 = list_fi
+                ax.scatter(f1, f2, c="red", s=10, alpha=1.0,
+                            label="Gen Optimal")
+                
+                ax.set_xlabel("$f_1$", fontsize=14)
+                ax.set_ylabel("$f_2$", fontsize=14)
+                ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
+                ax.text(
+                    -0.17, 0.5,
+                    self.problem.__class__.__name__.upper() + f"({self.mode})",
+                    transform=ax.transAxes,      
+                    va='center',
+                    ha='center',
+                    rotation='vertical',
+                    fontsize=20,
+                    fontweight='bold'
+                )
 
-        elif len(list_fi) == 2:
-            fig, ax = plt.subplots()
-            if plot_dataset and (self.dataset) is not None:
-                _, Y = self.dataset
-                # Denormalize the data
-                Y = self.offline_denormalization(Y,
-                                                self.y_meanormin,
-                                                self.y_stdormax)
-                ax.scatter(Y[:, 0], Y[:, 1],
+            elif len(list_fi) == 3:
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection="3d")
+                
+                if plot_dataset and (self.dataset is not None):
+                    _, Y = self.dataset
+                    # Denormalize the data
+                    Y = self.offline_denormalization(Y,
+                                                    self.y_meanormin,
+                                                    self.y_stdormax)
+                    ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2],
                             c="violet", s=5, alpha=1.0,
                             label="Training Data")
-                            
-            if extra is not None:
-                f1, f2 = extra
-                ax.scatter(f1, f2, c="yellow", s = 5, alpha=1.0,
+                
+                if extra is not None:
+                    f1, f2, f3 = extra
+                    ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,
                             label="Pareto Optimal")
                             
-            if pop is not None:
-                f_pop1, f_pop2 = pop
-                ax.scatter(f_pop1, f_pop2, c="blue", s=10, alpha=1.0,
+                if pop is not None:
+                    f_pop1, f_pop2, f_pop3 = pop
+                    ax.scatter(f_pop1, f_pop2, f_pop3, c="blue", s=10, alpha=1.0,
                             label="Gen Population")
-                
-            f1, f2 = list_fi
-            ax.scatter(f1, f2, c="red", s=10, alpha=1.0,
+                    
+                f1, f2, f3 = list_fi
+                ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0,
                         label="Gen Optimal")
-            
-            ax.set_xlabel("$f_1$", fontsize=14)
-            ax.set_ylabel("$f_2$", fontsize=14)
-            ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
-            ax.text(
-                -0.17, 0.5,
-                self.problem.__class__.__name__.upper() + f"({self.mode})",
-                transform=ax.transAxes,      
-                va='center',
-                ha='center',
-                rotation='vertical',
-                fontsize=20,
-                fontweight='bold'
-            )
-
-        elif len(list_fi) == 3:
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection="3d")
-            
-            if plot_dataset and (self.dataset is not None):
-                _, Y = self.dataset
-                # Denormalize the data
-                Y = self.offline_denormalization(Y,
-                                                self.y_meanormin,
-                                                self.y_stdormax)
-                ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2],
-                           c="violet", s=5, alpha=1.0,
-                           label="Training Data")
-            
-            if extra is not None:
-                f1, f2, f3 = extra
-                ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,
-                           label="Pareto Optimal")
-                        
-            if pop is not None:
-                f_pop1, f_pop2, f_pop3 = pop
-                ax.scatter(f_pop1, f_pop2, f_pop3, c="blue", s=10, alpha=1.0,
-                           label="Gen Population")
                 
-            f1, f2, f3 = list_fi
-            ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0,
-                       label="Gen Optimal")
-            
-            ax.set_xlabel("$f_1$", fontsize=14)
-            ax.set_ylabel("$f_2$", fontsize=14)
-            ax.set_zlabel("$f_3$", fontsize=14)
-            ax.view_init(elev=elev, azim=azim)
-            ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
-            ax.text2D(
-                -0.17, 0.5,
-                self.problem.__class__.__name__.upper() + f"({self.mode})",
-                transform=ax.transAxes,
-                va='center',
-                ha='center',
-                rotation='vertical',
-                fontsize=20,
-                fontweight='bold'
-            )
+                ax.set_xlabel("$f_1$", fontsize=14)
+                ax.set_ylabel("$f_2$", fontsize=14)
+                ax.set_zlabel("$f_3$", fontsize=14)
+                ax.view_init(elev=elev, azim=azim)
+                ax.set_title(f"Reverse Time Step: {t}", fontsize=14)
+                ax.text2D(
+                    -0.17, 0.5,
+                    self.problem.__class__.__name__.upper() + f"({self.mode})",
+                    transform=ax.transAxes,
+                    va='center',
+                    ha='center',
+                    rotation='vertical',
+                    fontsize=20,
+                    fontweight='bold'
+                )
+        else:
+            # Bayesian mode
+            if self.problem.n_obj == 2:
+                fig, ax = plt.subplots()
+                if extra is not None:
+                    f1, f2 = extra
+                    ax.scatter(f1, f2, c="yellow", s = 5, alpha=1.0,
+                                label="Pareto Optimal")
+                if pop is not None:
+                    f_pop1, f_pop2 = pop
+                    ax.scatter(f_pop1, f_pop2, c="green", s=10, alpha=1.0,
+                                label="Init points")
+                if list_fi is not None:
+                    for i in range(len(list_fi)):
+                        f1, f2 = list_fi[i]
+                        ax.scatter(f1, f2, c="red", s=10, alpha=1.0/(len(list_fi)-i),
+                                    label="Gen Optimal" if i==len(list_fi)-1 else None)
+           
+                ax.set_xlabel("$f_1$", fontsize=14)
+                ax.set_ylabel("$f_2$", fontsize=14)
+                ax.set_title(f"Step: {t}", fontsize=14)
+                ax.text(
+                    -0.17, 0.5,
+                    self.problem.__class__.__name__.upper() + f"(mobo)",
+                    transform=ax.transAxes,      
+                    va='center',
+                    ha='center',
+                    rotation='vertical',
+                    fontsize=20,
+                    fontweight='bold'
+                )
+
+            elif self.problem.n_obj == 3:
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection="3d")
+                
+                if extra is not None:
+                    f1, f2, f3 = extra
+                    ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,
+                            label="Pareto Optimal")
+                if pop is not None:
+                    f_pop1, f_pop2, f_pop3 = pop
+                    ax.scatter(f_pop1, f_pop2, f_pop3, c="green", s=10, alpha=1.0,
+                            label="Init points")
+                if list_fi is not None:
+                    for i in range(len(list_fi)):
+                        f1, f2, f3 = list_fi[i]
+                        ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0/(len(list_fi)-i),
+                                    label="Gen Optimal" if i==len(list_fi)-1 else None)
+                
+                ax.set_xlabel("$f_1$", fontsize=14)
+                ax.set_ylabel("$f_2$", fontsize=14)
+                ax.set_zlabel("$f_3$", fontsize=14)
+                ax.view_init(elev=elev, azim=azim)
+                ax.set_title(f"Step: {t}", fontsize=14)
+                ax.text2D(
+                    -0.17, 0.5,
+                    self.problem.__class__.__name__.upper() + f"(mobo)",
+                    transform=ax.transAxes,
+                    va='center',
+                    ha='center',
+                    rotation='vertical',
+                    fontsize=20,
+                    fontweight='bold'
+                )
 
         img_dir = f"{images_store_path}/{self.problem.__class__.__name__}_{self.mode}"
         if label is not None:
