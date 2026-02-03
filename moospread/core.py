@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from moospread.utils import *
-print
+
 class SPREAD:
     def __init__(self, 
                  problem,
@@ -62,6 +62,50 @@ class SPREAD:
                  train_func_surrogate = None,
                  plot_func = None,
                  verbose: bool = True):
+        """
+        Initialize a SPREAD solver instance, configure mode (online, offline, bayesian), 
+        prepare dataset (and normalization in offline mode), 
+        initialize diffusion model and (optionally) surrogate model setup.
+        
+        Arguments.
+            problem: Optimization problem instance. Must define n_var, n_obj, bounds (xl, xu / bounds()), 
+                and evaluate(...). In online/bayesian must implement _evaluate.
+            mode (str): One of {"online","offline","bayesian"}.
+            model: Diffusion model. If None, defaults to DiTMOO(...).
+            surrogate_model: Optional surrogate model (used in offline and bayesian).
+            dataset: Optional (X, y) training set. If None, SPREAD may generate data (depending on mode).
+            xi_shift: Optional constant shift added to conditioning objective values to ensure positivity.
+            data_size (int): Number of samples to generate if dataset is not provided.
+            validation_split (float): Fraction of dataset used for validation in diffusion training.
+            hidden_dim, num_heads, num_blocks: Diffusion model hyperparameters (for default DiTMOO).
+            timesteps (int): Number of diffusion steps.
+            batch_size (int): Batch size for diffusion training.
+            train_lr (float): Learning rate for diffusion training.
+            train_lr_surrogate (float): Learning rate for surrogate training (offline/bayesian).
+            num_epochs (int): Max epochs for diffusion training.
+            num_epochs_surrogate (int): Max epochs for surrogate training (offline/bayesian).
+            train_tol (int): Early-stopping patience for diffusion validation loss
+            train_tol_surrogate (int): Early-stopping patience for surrogate training (if implemented).
+            mobo_coef_lcb (float): LCB coefficient in Bayesian mode: mean - coef * std.
+            model_dir (str): Directory to store diffusion checkpoints.
+            proxies_store_path (str): Directory to store offline proxy models.
+            device: Torch device used for training/sampling.
+            seed (int): Random seed for reproducibility.
+            offline_global_clamping (bool): If True, clamp all dimensions with global min/max rather than per-dimension.
+            offline_normalization_method (str|None): One of {"z_score","min_max",None} used in offline mode for normalizing X and y.
+            train_func_surrogate: Optional user-defined surrogate training function.
+            plot_func: Optional custom plotting function.
+            verbose (bool): If True, prints parameter counts and progress messages.
+            
+        Outputs
+            None (constructor). Initializes internal fields like:
+            self.model, self.surrogate_model, self.dataset
+            offline normalization parameters: X_meanormin, X_stdormax, etc.
+            normalized bounds in offline mode (and stores original bounds).
+        
+        Raises
+            ValueError: If mode invalid, or if constraints on method availability are violated.
+        """
         
         self.mode = mode.lower()
         if self.mode not in ["offline", "online", "bayesian"]:
@@ -198,6 +242,34 @@ class SPREAD:
                             get_constraint=False,
                             get_grad_mobo=False,
                             evaluate_true=False):
+        """
+        Evaluate the objective functions at given points based on the current mode.
+        online: call true problem evaluation.
+        offline: evaluate proxy models (one per objective).
+        bayesian: evaluate surrogate mean/std and optionally gradients (LCB objective).
+        
+        Arguments
+            points (torch.Tensor): Decision points, shape (N, n_var) 
+                (or encoded forms for discrete/sequence problems depending on your pipeline).
+            return_as_dict (bool): Forwarded to problem.evaluate(...) in online/true eval.
+            return_values_of (list|None): Forwarded to problem.evaluate(...) to request "F", "G", "H", etc.
+            get_constraint (bool): If True, returns constraint info ("G", "H") along with objectives when supported.
+            get_grad_mobo (bool): Bayesian only. If True, requests gradients from surrogate (dF, dS) and returns gradient of LCB.
+            evaluate_true (bool): If True, forces true problem evaluation even if mode is not online (used for plotting in offline).
+            
+        Returns
+            If get_constraint=True (true/online): a dict with keys typically including "F" and optionally "G", "H".
+            If mode is online or evaluate_true=True: objective tensor (N, n_obj) (or dict if return_as_dict=True).
+            If mode is offline: tensor (N, n_obj) built by stacking each proxy output.
+            If mode is bayesian:
+                if get_grad_mobo=False: tensor (N, n_obj) containing mean - coef * std.
+                if get_grad_mobo=True: dict with:
+                    "F": LCB tensor (N, n_obj)
+                    "dF": list of length n_obj, each tensor (N, n_var).
+                    
+        Raises
+            ValueError: If mode is invalid.
+        """
         if evaluate_true:
             if self.problem.need_repair:
                 points = self.repair_bounds(points)
@@ -247,7 +319,7 @@ class SPREAD:
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
                  iterative_plot=True, plot_period=100, 
                  plot_dataset=False, plot_population=False,
-                 elev=30, azim=45, legend=False,
+                 elev=30, azim=45, legend=False, alpha_pf_3d=0.05,
                  max_backtracks=100, label=None, save_results=True,
                  load_models=False,
                  samples_store_path="./samples_dir/",
@@ -255,6 +327,43 @@ class SPREAD:
                  n_init_mobo=100, use_escape_local_mobo=True, 
                  n_steps_mobo=20, spread_num_samp_mobo=25,
                  batch_select_mobo=5):
+        """
+        offline/online: (optional) train surrogate → train diffusion → sample Pareto solutions.
+        bayesian: runs a full MOBO loop where SPREAD generates candidate designs and selects batches 
+        via hypervolume improvement.
+        
+        Arguments
+            Key Arguments (offline/online path)
+                num_points_sample (int): Number of solutions to sample.
+                strict_guidance (bool): If True, direction perturbation uses MGDA direction from a 
+                    single evolving target point.
+                rho_scale_gamma, nu_t, eta_init, num_inner_steps, lr_inner, free_initial_h: Guidance 
+                    inner-loop controls.
+                use_sigma_rep, kernel_sigma_rep: Repulsion loss configuration.
+                iterative_plot, legend, plot_period, plot_dataset, plot_population: Plot controls during sampling.
+                elev, azim, alpha_pf_3d: 3D plot controls.
+                max_backtracks: Max Armijo backtracking steps.
+                label: Extra tag appended to saved files/plots.
+                save_results (bool): Save sampled results to disk.
+                load_models (bool): If True, loads saved diffusion / proxy models instead of training.
+                samples_store_path, images_store_path: Output directories.
+            Key Arguments (bayesian path)
+                n_init_mobo (int): Initial random evaluations.
+                use_escape_local_mobo (bool): Enables switching between diffusion operator and SBX when HV stagnates.
+                n_steps_mobo (int): Number of MOBO iterations.
+                spread_num_samp_mobo (int): How many SPREAD sampling runs to aggregate into candidate pool.
+                batch_select_mobo (int): Batch size per iteration (selected by HV improvement).
+                
+        Returns
+            If mode in {offline, online}: (res_x, res_y)
+                res_x: np.ndarray of sampled Pareto(-like) decision vectors, shape (K, n_var) (K ≤ requested due to filtering).
+                res_y: np.ndarray of evaluated objectives, shape (K, n_obj) (or None if final evaluation disabled).
+            If mode is bayesian: ([X, Y], hv_all_value)
+                X: np.ndarray of all evaluated designs
+                Y: np.ndarray of all evaluated objectives
+                hv_all_value: list of hypervolume values per iteration.
+        """
+        
         set_seed(self.seed)
         if self.mode in ["offline", "online"]:
             X, y = self.dataset
@@ -299,7 +408,7 @@ class SPREAD:
                  use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
                  iterative_plot=iterative_plot, plot_period=plot_period, 
                  plot_dataset=plot_dataset, plot_population=plot_population,
-                 elev=elev, azim=azim, legend=legend,
+                 elev=elev, azim=azim, legend=legend, alpha_pf_3d=alpha_pf_3d,
                  max_backtracks=max_backtracks, label=label,
                  save_results=save_results,
                  samples_store_path=samples_store_path,
@@ -329,14 +438,14 @@ class SPREAD:
                                         extra=pareto_front,
                                         dataset = self.dataset,
                                         pop=list_fi_init,
-                                        elev=elev, azim=azim, legend=legend, mode=self.mode,
+                                        elev=elev, azim=azim, legend=legend, mode=self.mode, alpha_pf_3d=alpha_pf_3d,
                                         label=label, images_store_path=images_store_path)
                 else:
                     self.plot_pareto_front(list_fi=None, t=0,
                                             num_points_sample=batch_select_mobo,
                                                     extra=pareto_front,
                                                     pop=list_fi_init,
-                                                    elev=elev, azim=azim, legend=legend,
+                                                    elev=elev, azim=azim, legend=legend, alpha_pf_3d=alpha_pf_3d,
                                                     label=label, images_store_path=images_store_path)
 
             # initialize dominance-classifier for non-dominance relation
@@ -417,7 +526,7 @@ class SPREAD:
                                             use_sigma_rep=use_sigma_rep, kernel_sigma_rep=kernel_sigma_rep,
                                             iterative_plot=iterative_plot, plot_period=plot_period,
                                             plot_dataset=plot_dataset, plot_population=plot_population,
-                                            elev=elev, azim=azim, legend=legend,
+                                            elev=elev, azim=azim, legend=legend, alpha_pf_3d=alpha_pf_3d,
                                             max_backtracks=max_backtracks, label=label,
                                             samples_store_path=samples_store_path,
                                             images_store_path=images_store_path,
@@ -514,14 +623,14 @@ class SPREAD:
                                                     num_points_sample=batch_select_mobo,
                                                 extra=pareto_front,
                                                 dataset = self.dataset,
-                                                pop=list_fi_init,
+                                                pop=list_fi_init, alpha_pf_3d=alpha_pf_3d,
                                                 elev=elev, azim=azim, legend=legend, mode=self.mode,
                                                 label=label, images_store_path=images_store_path)
                         else:
                             self.plot_pareto_front(list_fi=all_selected_batch_y, t=k_iter+1,
                                                     num_points_sample=batch_select_mobo,
                                                             extra=pareto_front,
-                                                            pop=list_fi_init,
+                                                            pop=list_fi_init, alpha_pf_3d=alpha_pf_3d,
                                                             elev=elev, azim=azim, legend=legend,
                                                             label=label, images_store_path=images_store_path)
 
@@ -609,6 +718,20 @@ class SPREAD:
               train_dataloader, 
               val_dataloader=None,
               disable_progress_bar=False):
+        """
+        Train the diffusion model (DDPM) using MSE loss on predicted noise.
+        
+        Arguments
+            train_dataloader (DataLoader): Yields (x, obj_values) batches.
+            val_dataloader (DataLoader|None): Optional validation loader for early stopping 
+                and best checkpoint saving.
+            disable_progress_bar (bool): Disables tqdm progress bar.
+        
+        Returns
+            None. Saves checkpoints:
+            checkpoint_ddpm_best.pth (if validation enabled)
+            checkpoint_ddpm_last.pth (always)
+        """
         set_seed(self.seed)
         if self.verbose:
             print(datetime.datetime.now())
@@ -775,12 +898,37 @@ class SPREAD:
                  use_sigma_rep=False, kernel_sigma_rep=0.01,
                  iterative_plot=True, plot_period=100, 
                  plot_dataset=False, plot_population=False,
-                 elev=30, azim=45, legend=False,
+                 elev=30, azim=45, legend=False, alpha_pf_3d=0.05,
                  max_backtracks=25, label=None,
                  samples_store_path="./samples_dir/",
                  images_store_path="./images_dir/",
                  disable_progress_bar=False,
                  save_results=True, evaluate_final=True):
+        """
+        Generate num_points_sample decision vectors by reverse diffusion, with Pareto guidance 
+        and optional plotting/saving.
+        
+        Arguments
+            num_points_sample (int): Number of points to generate.
+            strict_guidance, rho_scale_gamma, nu_t, eta_init, num_inner_steps, lr_inner, free_initial_h: Guidance controls.
+            use_sigma_rep, kernel_sigma_rep: Repulsion controls.
+            iterative_plot, legend, plot_period, plot_dataset, plot_population: Plot controls.
+            elev, azim, alpha_pf_3d: Plot styling.
+            max_backtracks (int): Armijo backtracking limit.
+            label (str|None): Extra name tag.
+            samples_store_path, images_store_path: Output directories.
+            disable_progress_bar (bool): Disables tqdm.
+            save_results (bool): Saves *_x.npy, optionally *_y.npy and HV pickle.
+            evaluate_final (bool): If True, evaluates objectives on final points and filters NaN/Inf.
+        
+        Returns
+            (res_x, res_y)
+            res_x: np.ndarray, shape (K, n_var) sampled decision vectors.
+            res_y: np.ndarray, shape (K, n_obj) final objective values if evaluate_final=True, else None.
+        
+        Raises
+            ValueError: If no trained diffusion checkpoint found.
+        """
         # Set the seed
         set_seed(self.seed)
         if save_results:
@@ -886,7 +1034,7 @@ class SPREAD:
                                        extra=pareto_front,
                                        plot_dataset=plot_dataset,
                                        dataset = self.dataset,
-                                       pop=list_fi_pop,
+                                       pop=list_fi_pop, alpha_pf_3d=alpha_pf_3d,
                                        elev=elev, azim=azim, legend=legend, mode=self.mode,
                                        label=label, images_store_path=images_store_path)
                     else:
@@ -894,7 +1042,7 @@ class SPREAD:
                                                 num_points_sample,
                                                 extra=pareto_front,
                                                 plot_dataset=plot_dataset,
-                                                pop=list_fi_pop,
+                                                pop=list_fi_pop, alpha_pf_3d=alpha_pf_3d,
                                                 elev=elev, azim=azim, legend=legend,
                                                 label=label, images_store_path=images_store_path)
 
@@ -1047,7 +1195,7 @@ class SPREAD:
                                                     extra= pareto_front,
                                                     pop=list_fi_pop if plot_population else None,
                                                     plot_dataset=plot_dataset,
-                                                    dataset = self.dataset,
+                                                    dataset = self.dataset, alpha_pf_3d=alpha_pf_3d,
                                                     elev=elev, azim=azim, legend=legend, mode=self.mode,
                                                     label=label, images_store_path=images_store_path)
                                 else:
@@ -1055,7 +1203,7 @@ class SPREAD:
                                                         num_points_sample,
                                                         extra= pareto_front,
                                                         pop=list_fi_pop if plot_population else None,
-                                                        plot_dataset=plot_dataset,
+                                                        plot_dataset=plot_dataset, alpha_pf_3d=alpha_pf_3d,
                                                         elev=elev, azim=azim, legend=legend,
                                                         label=label, images_store_path=images_store_path)
                             
@@ -1124,6 +1272,25 @@ class SPREAD:
                         lr=1e-3, 
                         lr_decay=0.95, 
                         n_epochs=200):
+        """
+        Train or fit the surrogate model depending on mode.
+        bayesian: fits a single multi-output surrogate.
+        offline: trains one proxy per objective (then loads them into a list).
+        If a user surrogate was provided, delegates to train_surrogate_user_defined.
+        
+        Arguments
+            X (torch.Tensor or np.ndarray): Training inputs.
+            y (torch.Tensor or np.ndarray): Training objectives.
+            val_ratio (float): Validation split for offline proxy training.
+            batch_size (int): Batch size for proxy training.
+            lr, lr_decay, n_epochs: Proxy training hyperparameters.
+
+        Returns
+            None. Updates self.surrogate_model (list of models in offline, single model in bayesian).
+        
+        Raises
+            ValueError: If called in a mode that does not support surrogates.
+        """
 
         set_seed(self.seed) 
         self.surrogate_model = self.get_surrogate()
@@ -1186,22 +1353,35 @@ class SPREAD:
 
     def train_surrogate_user_defined(self, X, y):
         """ 
-        Train the user-defined surrogate model.
-        If self.mode == "offline", the train_func should return a list of trained surrogate models,
-        one for each objective.
-        If self.mode == "bayesian", the train_func should return a single trained surrogate model for all objectives.
+        Train a user-provided surrogate via self.train_func_surrogate.
         
-        Parameters
-        ----------
-        train_func : function
-            A function that takes X, y as input and returns a trained surrogate model.
-        **kwargs : dict
-            Additional keyword arguments to pass to the train_func.
-        -----------
+        Arguments
+            X: Training inputs.
+            y: Training objectives.
+            
+        Returns
+            None. Sets self.surrogate_model to whatever train_func_surrogate(X, y) returns:
+            offline: typically a list of per-objective models
+            bayesian: typically a single multi-objective surrogate.
         """
         self.surrogate_model = self.train_func_surrogate(X, y)
 
     def get_surrogate(self):
+        """
+        Construct a default surrogate model if the user did not provide one.
+        
+        Arguments
+            None.
+
+        Returns
+            If user provided a surrogate: returns it as-is.
+            Else:
+                bayesian: returns GaussianProcess(...)
+                offline: returns MultipleModels(...) configured for per-objective proxies.
+
+        Raises
+            ValueError: If called in a mode without surrogate support.
+        """
         if self.surrogate_given:
             return self.surrogate_model
         else:
@@ -1232,6 +1412,30 @@ class SPREAD:
         use_sigma=False, kernel_sigma=1.0, strict_guidance = False,
         max_backtracks=100, point_n0=None, optimizer_n0=None,
     ):
+        """
+        Perform one reverse-diffusion step plus Pareto guidance:
+        1. DDPM reverse step using predicted noise
+        2. Compute gradients of objectives
+        3. Compute MGDA direction
+        4. Armijo step-size selection
+        5. Solve inner problem for h_tilde (alignment + repulsion)
+        6. Update x_t
+        
+        Arguments (main ones)
+            x_t (torch.Tensor): Current samples, shape (N, n_var).
+            num_points_sample (int): N.
+            t (int): Current timestep index.
+            beta_t, alpha_bar_t: Diffusion schedule values at t.
+            rho_scale_gamma, nu_t, eta_init, num_inner_steps, lr_inner, free_initial_h: Guidance parameters.
+            use_sigma, kernel_sigma: Repulsion settings.
+            strict_guidance (bool): Uses target-direction perturbation from point_n0.
+            max_backtracks (int): Armijo backtracking cap.
+            point_n0 (torch.Tensor|None): Target point used in strict guidance.
+            optimizer_n0 (Optimizer|None): Optimizer updating point_n0.
+            
+        Returns
+            x_t (torch.Tensor): Updated samples after one SPREAD step, shape (N, n_var).
+        """
 
         # Create a tensor of timesteps with shape (num_points_sample, 1)
         t_tensor = torch.full(
@@ -1372,8 +1576,28 @@ class SPREAD:
         rho_scale_gamma=0.9
     ):
         """        
-        Returns:
-            h_tilde: Optimized h (Tensor of shape (batch_size, n_var)).
+        Inner-loop optimizer that learns/updates h to trade off:
+        alignment with MGDA direction g (descent)
+        repulsion/diversity in objective space (kernel-based)
+        
+        Arguments
+            x_t_prime (torch.Tensor): Starting points, shape (N, n_var).
+            g_x_t_prime (torch.Tensor): MGDA/PMGDA direction, shape (N, n_var).
+            grads (torch.Tensor): Objective gradients, shape (m, N, n_var).
+            g_w (torch.Tensor|None): Optional strict-guidance target direction, shape compatible 
+                with (N, n_var) or (1, n_var).
+            eta (torch.Tensor): Step size, shape (N, 1) (broadcasted).
+            nu_t (float): Weight of repulsion term.
+            sigma (float): Kernel bandwidth when use_sigma=True.
+            use_sigma (bool): Whether to use fixed sigma.
+            num_inner_steps (int): Number of optimization steps on h.
+            lr_inner (float): Learning rate for inner optimizer.
+            strict_guidance (bool): If True, uses g_w as target direction.
+            free_initial_h (bool): If False, initialize h at g; else initialize small constant.
+            rho_scale_gamma (float): Safety factor used in adaptive scaling.
+
+        Returns
+            h_tilde (torch.Tensor): Final guidance direction, shape (N, n_var) (detached).
         """
 
         x_t_h = x_t_prime.clone().detach()
@@ -1430,7 +1654,16 @@ class SPREAD:
 
     def get_training_data(self, problem, num_samples=10000):
         """
-        Sample points, using LHS, based on lowest constraint violation
+        Generate a training dataset using LHS sampling within bounds and evaluate objectives.
+        
+        Arguments
+            problem: Problem instance with bounds and evaluate.
+            num_samples (int): Number of sampled candidates.
+
+        Returns
+            (Xcand, F)
+            Xcand: sampled decision vectors
+            F: evaluated objectives.
         """
         sampler = LHS()
         # Problem bounds
@@ -1444,15 +1677,15 @@ class SPREAD:
     
     def betas_for_alpha_bar(self, T, alpha_bar, max_beta=0.999):
         """
-        Create a beta schedule that discretizes the given alpha_t_bar function,
-        which defines the cumulative product of (1-beta) over time from t = [0,1].
+        Discretize a continuous cumulative alpha-bar function into a beta schedule.
+        
+        Arguments
+            T (int): Number of steps.
+            alpha_bar (callable): Function t ∈ [0,1] -> ᾱ(t).
+            max_beta (float): Clamp for numerical stability.
 
-        :param T: the number of betas to produce.
-        :param alpha_bar: a lambda that takes an argument t from 0 to 1 and
-                        produces the cumulative product of (1-beta) up to that
-                        part of the diffusion process.
-        :param max_beta: the maximum beta to use; use values lower than 1 to
-                        prevent singularities.
+        Returns
+            torch.Tensor: Betas of shape (T,).
         """
         betas = []
         for i in range(T):
@@ -1463,7 +1696,13 @@ class SPREAD:
 
     def cosine_beta_schedule(self, s=0.008):
         """
-        Cosine schedule for beta values over timesteps.
+        Compute cosine-based beta schedule for self.timesteps.
+        
+        Arguments
+            s (float): Offset used in cosine schedule.
+
+        Returns
+            torch.Tensor: Betas of shape (self.timesteps,).
         """
         return self.betas_for_alpha_bar(
             self.timesteps,
@@ -1471,9 +1710,36 @@ class SPREAD:
         )
         
     def l_simple_loss(self, predicted_noise, actual_noise):
+        """
+        Compute DDPM training loss (MSE between predicted and true noise).
+        
+        Arguments
+            predicted_noise (torch.Tensor): Predicted noise.
+            actual_noise (torch.Tensor): True sampled noise.
+
+        Returns
+            torch.Tensor: Scalar loss.
+        """
         return nn.MSELoss()(predicted_noise, actual_noise)
 
     def get_target_dir(self, grads, mth="mgda", x=None):
+        """
+        Compute a single descent direction from multiple objective gradients using:
+            mgda: convex combination minimizing norm of weighted gradient
+            pmgda: constrained variant using PMGDASolver and constraints G/H
+            
+        Arguments
+            grads (list[torch.Tensor]): List of gradients, each shape (N, n_var) (or consistent tensor shape).
+            mth (str): "mgda" or "pmgda".
+            x (torch.Tensor|None): Required for pmgda (used for constraint evaluation and weights).
+
+        Returns
+            torch.Tensor: Combined direction g, same shape as one gradient (N, n_var).
+
+        Raises
+            AssertionError: If constraints exist but mth="mgda".
+            ValueError: Unknown method.
+        """
         m = len(grads)
         if self.problem.n_ieq_constr + self.problem.n_eq_constr > 0:
             assert mth != "mgda", "MGDA not supported with constraints. Use mth ='pmgda'."
@@ -1551,12 +1817,20 @@ class SPREAD:
         max_backtracks=100,
     ):
         """
-        Batched Armijo back-tracking line search for Multiple-Gradient-Descent (MGD).
-
+        Batched Armijo backtracking line search for multi-objective descent.
+        
+        Arguments
+            x_t (torch.Tensor): Current points (N, n_var).
+            d (torch.Tensor): Descent direction (N, n_var).
+            f_old (torch.Tensor): Current objective values (N, m).
+            grads (torch.Tensor): Gradients (N, m, n_var) (your code uses einsum accordingly).
+            eta_init (float|torch.Tensor): Initial step size (scalar or per-point).
+            rho (float): Backtracking shrink factor.
+            c1 (float): Armijo constant.
+            max_backtracks (int): Maximum backtracking iterations.
+            
         Returns
-        -------
-        eta  : torch.Tensor, shape (N,)
-            Final step sizes.
+            eta (torch.Tensor): Step sizes shaped (N, 1).
         """
         
         x = x_t.clone().detach()
@@ -1602,14 +1876,14 @@ class SPREAD:
 
         ∇f_j(x_i)^T [ g_i + rho_i * delta_raw_i ] > 0  for all j.
 
-        Args:
+        Arguments
             g (torch.Tensor):         [n_points, d], the multi-objective "gradient"
                                     (which we *subtract* in the update).
             delta_raw (torch.Tensor): [n_points, d] or [1, d], the unscaled diversity/repulsion direction.
             grads (torch.Tensor):     [m, n_points, d], storing ∇f_j(x_i).
             gamma (float):            Safety factor in (0,1).
 
-        Returns:
+        Returns
             delta_scaled (torch.Tensor): [n_points, d], scaled directions s.t.
             for all j:  grads[j,i]ᵀ [g[i] + delta_scaled[i]] > 0.
         """
@@ -1649,14 +1923,13 @@ class SPREAD:
     
     def repair_bounds(self, x):
         """
-        Clips a tensor x of shape [N, d] such that for each column j:
-            x[:, j] is clipped to be between xl[j] and xu[j].
+        Clamp candidate decision vectors into problem bounds (either per-dimension or globally).
+        
+        Arguments
+            x (torch.Tensor): Shape (N, n_var).
 
-        Parameters:
-            x (torch.Tensor): Input tensor of shape [N, d].
-
-        Returns:
-            torch.Tensor: The clipped tensor with the same shape as x.
+        Returns
+            torch.Tensor: Clipped tensor of same shape.
         """
 
         xl, xu = self.problem.bounds()[0], self.problem.bounds()[1]
@@ -1673,9 +1946,15 @@ class SPREAD:
                        sigma=1.0, 
                        use_sigma=False):
         """
-        Computes the repulsion loss over a batch of points in the objective space.
-        F_: Tensors of shape (n, m), where n is the batch size.
-        Only unique pairs (i < j) are considered.
+        Compute RBF-style repulsion loss in objective space to encourage diversity.
+        
+        Arguments
+            F_ (torch.Tensor): Objective values, shape (N, m).
+            sigma (float): Kernel bandwidth when use_sigma=True.
+            use_sigma (bool): Whether to use fixed sigma or median heuristic.
+
+        Returns
+            torch.Tensor: Scalar repulsion loss.
         """
         n = F_.shape[0]
         # Compute pairwise differences: shape [n, n, m]
@@ -1695,6 +1974,16 @@ class SPREAD:
         return loss
 
     def eps_dominance(self, Obj_space, alpha=0.0):
+        """
+        Compute indices of (epsilon-)non-dominated points using an epsilon shift epsilon = alpha * min(Obj_space).
+        
+        Arguments
+            Obj_space (np.ndarray): Objective values (N, m).
+            alpha (float): Epsilon scaling factor.
+
+        Returns
+            list[int]: Indices of epsilon-nondominated points.
+        """
         epsilon = alpha * np.min(Obj_space, axis=0)
         N = len(Obj_space)
         Pareto_set_idx = list(range(N))
@@ -1716,6 +2005,30 @@ class SPREAD:
         indx_only=False, 
         p_front=None
     ):
+        """
+        Extract nondominated points (or indices) depending on mode:
+            offline/online: uses eps_dominance
+            bayesian: uses dominance classifier pairwise predictions
+            
+        Arguments
+            points_pred (torch.Tensor|None): Decision points (N, n_var).
+            keep_shape (bool): If True, returns a tensor with same length N by replacing dominated 
+                entries with nearest nondominated neighbor.
+            indx_only (bool): If True, only returns indices.
+            p_front (np.ndarray|None): If provided and points_pred is None, uses this objective array directly.
+
+        Returns
+            If indx_only=True: PS_idx (list[int])
+            Else if keep_shape=True: (pf_points, points_pred, PS_idx)
+            pf_points: tensor shaped like points_pred (length N)
+            points_pred: original input
+            PS_idx: nondominated indices
+            Else: (pf_points[PS_idx], points_pred, PS_idx)
+
+        Raises
+            ValueError: If insufficient inputs are provided.
+        """
+        
         if not indx_only and points_pred is None:
             raise ValueError("points_pred cannot be None when indx_only is False.")
         if points_pred is not None:
@@ -1766,9 +2079,13 @@ class SPREAD:
 
     def crowding_distance(self, points):
         """
-        Compute crowding distances for points.
-        points: Tensor of shape (N, D) in the objective space.
-        Returns: Tensor of shape (N,) containing crowding distances.
+        Compute crowding distance (NSGA-II style) for a set of objective points.
+
+        Arguments
+            points (torch.Tensor): Objective values, shape (N, m).
+
+        Returns
+            torch.Tensor: Crowding distances, shape (N,) (with boundary points set to inf per objective).
         """
         N, D = points.shape
         distances = torch.zeros(N, device=points.device)
@@ -1795,10 +2112,17 @@ class SPREAD:
         top_frac: float = 0.9
     ) -> torch.Tensor:
         """
-        Selects the top `n` points from `points` based on crowding distance.
+        Select a subset of candidate decision vectors based on diversity and (in bayesian) 
+        predicted nondominance.
 
-        Returns:
-            torch.Tensor: The best subset of points (shape [n, D]).
+        Arguments
+            points (torch.Tensor): Candidate decision vectors, shape (N, n_var).
+            n (int): Number of points to return.
+            top_frac (float): Bayesian-only fallback: fraction of best-ranked points considered 
+                before crowding selection.
+
+        Returns
+            torch.Tensor: Selected decision vectors, shape (min(n,N), n_var).
         """
         
         if self.mode in ["online", "offline"]:
@@ -1894,8 +2218,31 @@ class SPREAD:
                           label=None,
                           plot_dataset=False,
                           pop=None,
-                          elev=30, azim=45, legend=False,
+                          elev=30, azim=45, legend=False, alpha_pf_3d=0.05,
                           images_store_path="./images_dir/"):
+        """
+        Save a 2D/3D scatter plot of generated Pareto(-like) points (and optionally dataset, 
+        population, and true Pareto front).
+        
+        Arguments
+            list_fi: Objectives to plot.
+            offline/online: list of arrays [f1, f2] or [f1, f2, f3]
+            bayesian: can be a list over iterations, each element containing [f1, f2] (or 3D)
+            t (int): Reverse timestep (or MOBO iteration).
+            num_points_sample (int): Used in filename.
+            extra: Optional true Pareto front arrays.
+            label: Optional name suffix.
+            plot_dataset (bool): If True, plots training data (offline).
+            pop: Optional population objectives to plot.
+            elev, azim: 3D view parameters.
+            legend (bool): Add legend.
+            alpha_pf_3d (float): Alpha for 3D Pareto front points.
+            images_store_path (str): Folder to save images.
+
+        Returns
+            None. Writes an image file to disk.
+        """
+        
         name = (
             "spread"
             + "_"
@@ -1974,7 +2321,7 @@ class SPREAD:
                 
                 if extra is not None:
                     f1, f2, f3 = extra
-                    ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,
+                    ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=alpha_pf_3d,
                             label="Pareto Optimal")
                             
                 if pop is not None:
@@ -2012,11 +2359,20 @@ class SPREAD:
                 if pop is not None:
                     f_pop1, f_pop2 = pop
                     ax.scatter(f_pop1, f_pop2, c="green", s=10, alpha=1.0,
-                                label="Init points")
+                                label="Init Points")
                 if list_fi is not None:
+                    n = len(list_fi)
                     for i in range(len(list_fi)):
                         f1, f2 = list_fi[i]
-                        ax.scatter(f1, f2, c="red", s=10, alpha=1.0/(len(list_fi)-i),
+                        # alpha for the inner color only
+                        a = 1.0 / (n - i)
+                        face_color = (1.0, 0.0, 0.0, a)   # red with fading alpha
+                        edge_color = (1.0, 0.0, 0.0, 1.0) # solid red border
+                        ax.scatter(f1, f2, c="red", s=10, 
+                                   facecolors=face_color,
+                                    edgecolors=edge_color,
+                                    linewidths=0.5,
+                                    marker='o',
                                     label="Gen Optimal" if i==len(list_fi)-1 else None)
            
                 ax.set_xlabel("$f_1$", fontsize=14)
@@ -2039,16 +2395,24 @@ class SPREAD:
                 
                 if extra is not None:
                     f1, f2, f3 = extra
-                    ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=0.05,
+                    ax.scatter(f1, f2, f3, c="yellow", s = 5, alpha=alpha_pf_3d,
                             label="Pareto Optimal")
                 if pop is not None:
                     f_pop1, f_pop2, f_pop3 = pop
                     ax.scatter(f_pop1, f_pop2, f_pop3, c="green", s=10, alpha=1.0,
-                            label="Init points")
+                            label="Init Points")
                 if list_fi is not None:
+                    n = len(list_fi)
                     for i in range(len(list_fi)):
                         f1, f2, f3 = list_fi[i]
-                        ax.scatter(f1, f2, f3, c="red", s = 10, alpha=1.0/(len(list_fi)-i),
+                        a = 1.0 / (n - i)
+                        face_color = (1.0, 0.0, 0.0, a)   # red with fading alpha
+                        edge_color = (1.0, 0.0, 0.0, 1.0) # solid red border
+                        ax.scatter(f1, f2, f3, c="red", s = 10, 
+                                   facecolors=face_color,
+                                    edgecolors=edge_color,
+                                    linewidths=0.5,
+                                    marker='o',
                                     label="Gen Optimal" if i==len(list_fi)-1 else None)
                 
                 ax.set_xlabel("$f_1$", fontsize=14)
@@ -2087,14 +2451,29 @@ class SPREAD:
                             total_duration_s=20.0,
                             first_transition_s=2.0,
                             fps=30,
+                            reverse=True,
                             extensions=("*.jpg", "*.png", "*.jpeg", "*.bmp")):
-        """Create a video from images in `image_folder`, sorted by t=... in filename.
-        The first transition (first->second image) lasts `first_transition_s` seconds.
-        The remaining transitions share the remaining time equally.
-        The output video has total duration `total_duration_s` seconds at `fps` frames per second.
+        """
+        Create an MP4 video by blending a sequence of images (sorted by t=... in filename). First transition gets 
+        a fixed duration; remaining transitions share the rest.
+        
+        Arguments
+            image_folder (str): Directory containing images.
+            output_video (str): Output video path (MP4).
+            total_duration_s (float): Total video duration in seconds.
+            first_transition_s (float): Duration of first transition in seconds.
+            fps (int): Frames per second.
+            reverse (bool): If True, sort images by decreasing t=....
+            extensions (tuple[str,...]): Glob patterns for image files.
+
+        Returns
+            None. Writes video to output_video and prints a success message.
+
+        Raises
+            RuntimeError: If no images are found, fewer than two images exist, or first image cannot be read.
         """
 
-        # Collect and sort by t=... (descending)
+        # Collect and sort by t=... (descending/ascending)
         paths = []
         for ext in extensions:
             paths.extend(glob.glob(os.path.join(image_folder, ext)))
@@ -2106,7 +2485,7 @@ class SPREAD:
             m = t_pat.search(p)
             return int(m.group(1)) if m else -1
 
-        paths.sort(key=lambda p: t_val(p), reverse=True)
+        paths.sort(key=lambda p: t_val(p), reverse=reverse)
         N = len(paths)
         if N < 2:
             raise RuntimeError("Need at least two images for a transition.")
