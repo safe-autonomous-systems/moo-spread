@@ -4,8 +4,6 @@ import numpy as np
 import torch.nn as nn
 
 
-# This file implements some Utility Functions about training
-
 def prepare_dom_data(x, y, rel_map, dom, start=0, data_kind='tensor', device='cpu'):
     n = len(x)
     data = []
@@ -65,22 +63,48 @@ def load_batched_dom_data(data, batch_size):
 
 
 def compute_class_weight(class_labels):
+    #################################### Original implementation (can return None too eagerly):
+    # n_examples = len(class_labels)
+
+    # class_labels = class_labels.cpu().numpy()
+    # n_zero = np.sum(class_labels == 0)
+    # n_one = np.sum(class_labels == 1)
+    # n_two = n_examples - n_zero - n_one
+
+    # if n_zero == 0 or n_one == 0 or n_two == 0:
+    #     return None
+
+    # w_zero = n_examples / (3. * n_zero)
+    # w_one = n_examples / (3. * n_one)
+    # w_two = n_examples / (3. * n_two)
+    
+    # return w_zero, w_one, w_two
+
+    # return w_zero, w_one, w_two
+    ################################### Revised implementation:
+    eps = 1e-6
     n_examples = len(class_labels)
-
-    class_labels = class_labels.cpu().numpy()
-    n_zero = np.sum(class_labels == 0)
-    n_one = np.sum(class_labels == 1)
-    n_two = n_examples - n_zero - n_one
-
-    if n_zero == 0 or n_one == 0 or n_two == 0:
-        return None
-
-    w_zero = n_examples / (3. * n_zero)
-    w_one = n_examples / (3. * n_one)
-    w_two = n_examples / (3. * n_two)
-
-    return w_zero, w_one, w_two
-
+    labels = class_labels.detach().cpu().numpy().astype(int)
+    n_zero = np.sum(labels == 0)
+    n_one  = np.sum(labels == 1)
+    n_two  = np.sum(labels == 2)
+    counts = np.array([n_zero, n_one, n_two], dtype=float)
+    weights = np.zeros(3, dtype=float)
+    # indices of present classes
+    present = counts > 0
+    missing = counts == 0
+    if missing.any():
+        # set missing class(es) to eps
+        weights[missing] = eps
+        # compute raw weights for present classes using your formula
+        raw = n_examples / (3.0 * counts[present])
+        # normalize them to sum to (1 - eps * num_missing)
+        remaining = 1.0 - eps * missing.sum()
+        weights[present] = raw / raw.sum() * remaining
+    else:
+        # standard case: all classes present
+        weights = n_examples / (3.0 * counts)
+    return tuple(weights)
 
 def train_nn(data, data_loader, net, criterion, optimizer, batch_size, epochs):
     #10000 12
