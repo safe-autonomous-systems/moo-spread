@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: moospread
-Version: 0.1.4
+Version: 0.1.5
 Summary: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 Author-email: Sedjro Salomon Hotegni <salomon.hotegni@aims.ac.rw>
 Maintainer-email: Sedjro Salomon Hotegni <salomon.hotegni@tu-dortmund.de>
@@ -73,7 +73,7 @@ Dynamic: license-file
     <h3>
       <a href="https://pypi.org/project/moospread/">Installation</a> |
       <a href="https://moospread.readthedocs.io/en/latest/">Documentation</a> | 
-      <a href="https://arxiv.org/pdf/2509.21058">Paper</a>
+      <a href="https://openreview.net/forum?id=4731mIqv89">Paper</a>
     </h3>
 </div>
 
