@@ -93,3 +93,33 @@ If intermediate Pareto fronts are not required, set ``iterative_plot=False``.
        spread_num_samp_mobo=25,
        batch_select_mobo=5
    )
+
+Since ``iterative_plot`` is enabled in this example, we can visualize the generative process using the images saved in ``images_store_path`` (see :ref:`visualization`).
+
+Here, the generated points are plotted after each MOBO step (1, 2, …, 20). Therefore, we need to set ``reverse=False``.
+
+.. code-block:: python
+
+   solver.create_video(
+       image_folder="images_dir/BraninCurrin_bayesian",
+       output_video="videos_dir/BraninCurrin_bayesian.mp4",
+       total_duration_s=20.0,
+       first_transition_s=2.0,
+       fps=30,
+       reverse=False
+   )
+
+
+.. list-table::
+   :widths: 50 50
+   :align: center
+
+   * - .. figure:: _static/BraninCurrin_n5_bayesian.gif
+          :width: 300px
+
+          Generative process
+
+     - .. figure:: _static/spread_BraninCurrin_T=25_N=5_t=20_seed=2026_bayesian.jpg
+          :width: 300px
+
+          Final generated Pareto front
