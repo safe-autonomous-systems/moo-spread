@@ -1,15 +1,25 @@
 <p align="center">
-  <img src="/images/logo_well_spread.png" style="width: 30%; height: auto;">
-</p>
-<!--
-[![PyPI version](https://badge.fury.io/py/moospread.svg)](https://badge.fury.io/py/moospread)
--->
-<p align="center">
-  <a href="https://pypi.org/project/moospread/"><img src="https://img.shields.io/pypi/v/moospread.svg" alt="PyPI version"></a>
+  <img src="/images/logo_well_spread.png" style="width: 30%; height: auto;"><br>
+  <a href="https://pypi.org/project/moospread/">
+    <img src="https://img.shields.io/pypi/v/moospread.svg" alt="PyPI version">
+  </a>
   <a href="https://moospread.readthedocs.io">
-  <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
-</a>
+    <img src="https://img.shields.io/badge/docs-online-brightgreen.svg" alt="Documentation">
+  </a>
 </p>
+<table style="border-collapse: collapse; border: none;">
+  <tr>
+    <td style="border: none; padding: 0;">
+      <img src="docs/_static/ZDT2_n200_online.gif" style="max-width: 10%; height: auto;" />
+    </td>
+    <td style="border: none; padding: 0;">
+      <img src="docs/_static/RE21_n200_offline.gif" style="max-width: 10%; height: auto;" />
+    </td>
+    <td style="border: none; padding: 0;">
+      <img src="docs/_static/BraninCurrin_n5_bayesian.gif" style="max-width: 10%; height: auto;" />
+    </td>
+  </tr>
+</table>
 <div align="center">
     <h3>
       <a href="https://pypi.org/project/moospread/">Installation</a> |
