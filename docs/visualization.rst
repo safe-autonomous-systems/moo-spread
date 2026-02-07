@@ -37,3 +37,6 @@ This function creates a video from the images stored in ``image_folder``, which 
 
 The first transition (from the first to the second image) lasts ``first_transition_s`` seconds, while the remaining transitions share the remaining time equally.
 The resulting video has a total duration of ``total_duration_s`` seconds and is rendered at ``fps`` frames per second.
+
+In the :ref:`mobo-setting`, a useful visualization is the evolution of the hypervolume over the MOBO steps. 
+This can be obtained by setting ``hypervolume=True`` and providing the directory ``hv_all_value_file`` where the hypervolume values are stored.
