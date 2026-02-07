@@ -16,7 +16,7 @@
       <img src="docs/_static/RE21_n200_offline.gif" style="max-width: 10%; height: auto;" />
     </td>
     <td style="border: none; padding: 0;">
-      <img src="docs/_static/BraninCurrin_n5_bayesian.gif" style="max-width: 10%; height: auto;" />
+      <img src="docs/_static/BraninCurrin_n5_bayesian_hv.gif" style="max-width: 10%; height: auto;" />
     </td>
   </tr>
 </table>
