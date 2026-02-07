@@ -42,8 +42,8 @@
   <title>SPREAD: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion - Sedjro Salomon Hotegni, Sebastian Peitz | Academic Research</title>
   
   <!-- Favicon and App Icons -->
-  <link rel="icon" type="image/x-icon" href="projectpage/images/favicon.ico">
-  <link rel="apple-touch-icon" href="projectpage/images/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="projectpage/images/logo_well_spread.ico">
+  <link rel="apple-touch-icon" href="projectpage/images/logo_well_spread.ico">
   
   <!-- Critical CSS - Load synchronously -->
   <link rel="stylesheet" href="projectpage/css/bulma.min.css">
@@ -220,9 +220,9 @@ Empirical results on multi-objective optimization benchmarks, including offline 
             <div class="is-size-5 publication-authors">
               <!-- TODO: Replace with your paper authors and their personal links -->
               <span class="author-block">
-                <a href="FIRST AUTHOR PERSONAL LINK" target="_blank">Sedjro Salomon Hotegni</a>,</span>
+                <a href="https://shsalomon.github.io/" target="_blank">Sedjro Salomon Hotegni</a>,</span>
                 <span class="author-block">
-                  <a href="SECOND AUTHOR PERSONAL LINK" target="_blank">Sebastian Peitz</a>
+                  <a href="https://sas.cs.tu-dortmund.de/sebastian-peitz" target="_blank">Sebastian Peitz</a>
                 </span>
                   </div>
 
@@ -273,7 +273,7 @@ Empirical results on multi-objective optimization benchmarks, including offline 
 </section>
 
 
-<!-- Teaser video-->
+<!-- Teaser-->
 <section class="hero teaser">
   <div class="container is-max-desktop">
     <div class="hero-body">
@@ -282,13 +282,13 @@ Empirical results on multi-objective optimization benchmarks, including offline 
       alt="Banner image"
       style="width:100%; height:auto;">
       <!-- TODO: Replace with your video description -->
-      <h2 class="subtitle has-text-centered">
+      <h2 class="subtitle has-text-justified">
           SPREAD learns a conditional diffusion model over decision variables and then iteratively refines sampled candidates during reverse diffusion to move them toward Pareto-optimal regions. At each step, it guides the samples using adaptive multiple-gradient-descent directions to improve objectives while adding a repulsion term to maintain diversity along the Pareto front.
       </h2>
     </div>
   </div>
 </section>
-<!-- End teaser video -->
+<!-- End teaser -->
 
 <!-- Paper abstract -->
 <section class="section hero is-light">
@@ -312,6 +312,24 @@ Empirical results on multi-objective optimization benchmarks, including offline 
   </div>
 </section>
 <!-- End paper abstract -->
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <h2 class="title is-3">Design of DiT-MOO (noise-prediction network)</h2>
+      <h2 class="subtitle has-text-justified">
+          We use a Transformer-based diffusion architecture (DiT-MOO) adapted to multi-objective optimization. 
+        The noisy candidate solutions are first embedded into tokens and combined with time-step embeddings and conditioning on objective information, allowing the model to learn how solution quality relates to structure in the decision space.
+      </h2>
+      <img id="tree"
+      src="projectpage/images/dit_moo.png"
+      alt="Banner image"
+      style="width:100%; height:auto;">
+      <!-- TODO: Replace with your video description -->
+      
+    </div>
+  </div>
+</section>
 
 <!--BibTex citation -->
   <section class="section" id="BibTeX">
