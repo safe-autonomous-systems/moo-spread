@@ -123,3 +123,17 @@ Here, the generated points are plotted after each MOBO step (1, 2, …, 20). The
           :width: 300px
 
           Final generated Pareto front
+
+If we set ``hypervolume=True`` and provide  
+``hv_all_value_file="samples_dir/spread_BraninCurrin_T25_K20_FE100_seed=2026_bayesian_hv_results.pkl"``,  
+we can visualize the evolution of the hypervolume.
+
+.. list-table::
+   :widths: 50 50
+   :align: center
+
+   * - .. figure:: _static/BraninCurrin_n5_bayesian_hv.gif
+          :width: 300px
+
+     - .. figure:: _static/spread_hv_BraninCurrin_T=25_t=21_seed=2026_bayesian.jpg
+          :width: 300px
