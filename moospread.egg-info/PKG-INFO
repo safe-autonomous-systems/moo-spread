@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: moospread
-Version: 0.1.5
+Version: 0.1.6
 Summary: Sampling-based Pareto front Refinement via Efficient Adaptive Diffusion
 Author-email: Sedjro Salomon Hotegni <salomon.hotegni@aims.ac.rw>
 Maintainer-email: Sedjro Salomon Hotegni <salomon.hotegni@tu-dortmund.de>
