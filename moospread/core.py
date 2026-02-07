@@ -2447,23 +2447,29 @@ class SPREAD:
             )
         plt.close()
 
-    def create_video(self, image_folder, output_video,
+    def create_video(self, image_folder=None, output_video=None,
                             total_duration_s=20.0,
                             first_transition_s=2.0,
                             fps=30,
-                            reverse=True,
+                            reverse=True, hypervolume=False,
+                            hv_all_value_file=None, hv_images_dir="./hv_images_dir/",
                             extensions=("*.jpg", "*.png", "*.jpeg", "*.bmp")):
         """
         Create an MP4 video by blending a sequence of images (sorted by t=... in filename). First transition gets 
         a fixed duration; remaining transitions share the rest.
         
         Arguments
-            image_folder (str): Directory containing images.
-            output_video (str): Output video path (MP4).
+            image_folder (str|None): Directory containing images.
+            output_video (str|None): Output video path (MP4).
             total_duration_s (float): Total video duration in seconds.
             first_transition_s (float): Duration of first transition in seconds.
             fps (int): Frames per second.
             reverse (bool): If True, sort images by decreasing t=....
+            hypervolume (bool): Only in bayesian mode: if True, make a video of hypervolume evolution 
+                instead of Pareto front.
+            hv_all_value_file (str|None): If hypervolume=True, path to .pkl file containing a
+                list of hypervolume values for all mobo steps.
+            hv_images_dir (str): Directory to save hypervolume plot images.
             extensions (tuple[str,...]): Glob patterns for image files.
 
         Returns
@@ -2472,6 +2478,70 @@ class SPREAD:
         Raises
             RuntimeError: If no images are found, fewer than two images exist, or first image cannot be read.
         """
+        
+        if hypervolume and self.mode != "bayesian":
+            raise ValueError("Hypervolume video option is only valid in bayesian mode.")
+        if hypervolume:
+            if hv_all_value_file is None:
+                raise ValueError("hv_all_value_file must be provided for hypervolume video.")
+            # Load hypervolume values from hv_all_value_file
+            with open(hv_all_value_file, "rb") as f:
+                hv_all_value = pickle.load(f)
+
+            img_dir = f"{hv_images_dir}/{self.problem.__class__.__name__}_{self.mode}"
+            if not os.path.exists(img_dir):
+                os.makedirs(img_dir)
+            # Plot incrementally
+            for i in range(len(hv_all_value)):
+                fig, ax = plt.subplots()
+
+                x = list(range(0, i + 1))
+                y = hv_all_value[:i + 1]
+
+                ax.plot(x, y, marker="o", color="red", linewidth=5, markersize=8)
+                ax.set_xlabel("Step", fontsize=14)
+                ax.set_ylabel("Hypervolume", fontsize=14)
+                if i == 0:
+                    ax.set_title(f"Initialization", fontsize=14)
+                else:
+                    ax.set_title(f"MOBO Step: {i}", fontsize=14)
+                ax.text(
+                    -0.17, 0.5,
+                    self.problem.__class__.__name__.upper() + f"(mobo)",
+                    transform=ax.transAxes,      
+                    va='center',
+                    ha='center',
+                    rotation='vertical',
+                    fontsize=20,
+                    fontweight='bold'
+                )
+                ax.grid(True)
+                name = (
+                    "spread"
+                    + "_hv_"
+                    + self.problem.__class__.__name__
+                    + "_"
+                    + f"T={self.timesteps}"
+                    + "_" 
+                    + f"t={i+1}"
+                    + "_"
+                    + f"seed={self.seed}"
+                    + "_"
+                    + self.mode
+                )  
+                plt.savefig(
+                    f"{img_dir}/{name}.jpg",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+                plt.close()    
+            
+            assert output_video is not None, "output_video must be provided."
+            image_folder = img_dir
+            reverse = False  # HV always ascending
+        else:
+            if image_folder is None or output_video is None:
+                raise ValueError("image_folder and output_video must be provided for Pareto front video.")
 
         # Collect and sort by t=... (descending/ascending)
         paths = []
