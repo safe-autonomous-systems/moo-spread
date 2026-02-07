@@ -1,0 +1,6 @@
+exclude:
+  - README_PYPI.md
+  - pyproject.toml
+  - setup.cfg
+  - requirements*.txt
+  - .github/
