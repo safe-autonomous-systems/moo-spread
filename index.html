@@ -404,8 +404,43 @@ Empirical results on multi-objective optimization benchmarks, including offline 
             alt="Sampling procedure diag"
             style="width:100%; height:auto;">
         </div>
+      </div>
+    </div>
+  </div>
+    </div>
+</section>
 
-       
+
+<section class="hero is-light">
+  <div class="hero-body">
+  <div class="container is-max-desktop">
+    <div class="columns has-text-centered">
+      <div class="columns is-vcentered">
+        <h2 class="title is-3">Extension towards surrogate-based optimization</h2>
+        <p class="subtitle has-text-justified">
+        Beyond the classical (online) setting, SPREAD extends naturally to resource-constrained multi-objective optimization, 
+          where true objective evaluations are expensive or limited, and surrogate models are used. 
+        </p>
+        <!-- Left column: text -->
+        <div class="column is-half">
+          <h2 class="title is-3">Offline MOO</h2>
+          <p class="subtitle has-text-justified">
+            In offline multi-objective optimization, the true objective functions are unavailable.
+            Instead, a pre-collected dataset of design points and their objective values is used to train a surrogate model that approximates the objectives.
+            To adapt SPREAD to this setting, the training data is taken directly from this dataset, and the surrogate model is used in place of the true objectives during refinement.
+          </p>
+        </div>
+
+        <!-- Right column: image -->
+        <div class="column is-half">
+           <h2 class="title is-3">Bayesian MOO</h2>
+          <p class="subtitle has-text-justified">
+            A key challenge in multi-objective Bayesian optimization (MOBO) is the limited evaluation budget of expensive objective functions, 
+            which is typically handled by using iteratively updated Gaussian-process surrogate models. To adapt SPREAD to this setting, 
+            we combine these surrogate models with simulated binary crossover (SBX) as an auxiliary mechanism to escape local optima, 
+            and use the data-extraction strategy introduced in CDM-PSL.
+          </p>
+        </div>
 
       </div>
 
