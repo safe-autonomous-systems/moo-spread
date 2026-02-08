@@ -24,7 +24,8 @@
     <h3>
       <a href="https://pypi.org/project/moospread/">Installation</a> |
       <a href="https://moospread.readthedocs.io/en/latest/">Documentation</a> | 
-      <a href="https://openreview.net/forum?id=4731mIqv89">Paper</a>
+      <a href="https://openreview.net/forum?id=4731mIqv89">Paper</a>| 
+      <a href="https://safe-autonomous-systems.github.io/moo-spread/">Project</a>
     </h3>
 </div>
 <!--
