@@ -170,7 +170,7 @@ Empirical results on multi-objective optimization benchmarks, including offline 
     </button>
     <div class="more-works-dropdown" id="moreWorksDropdown">
       <div class="dropdown-header">
-        <h4>More Works from Our Lab</h4>
+        <h4>More Works from Our Group on MOO</h4>
         <button class="close-btn" onclick="toggleMoreWorks()">
           <i class="fas fa-times"></i>
         </button>
@@ -199,9 +199,17 @@ Empirical results on multi-objective optimization benchmarks, including offline 
         </a>
         <a href="https://www.sciencedirect.com/science/article/pii/S2666827025000830?via%3Dihub" class="work-item" target="_blank">
           <div class="work-info">
-            <h5>Multi-objective deep learning: taxonomy and survey of the state of the art.</h5>
+            <h5>Multi-objective deep learning: taxonomy and survey of the state of the art</h5>
             <p></p>
             <span class="work-venue">Machine learning with applications 2025</span>
+          </div>
+          <i class="fas fa-external-link-alt"></i>
+        </a>
+        <a href="https://link.springer.com/chapter/10.1007/978-3-032-04555-3_21" class="work-item" target="_blank">
+          <div class="work-info">
+            <h5>Surrogate-Assisted Multi-objective Design of Complex Multibody Systems</h5>
+            <p></p>
+            <span class="work-venue">ICANN 2025</span>
           </div>
           <i class="fas fa-external-link-alt"></i>
         </a>
@@ -316,7 +324,7 @@ Empirical results on multi-objective optimization benchmarks, including offline 
 <section class="hero teaser">
   <div class="container is-max-desktop">
     <div class="hero-body">
-      <h2 class="title is-3">Design of DiT-MOO (noise-prediction network)</h2>
+      <h2 class="title is-3">DiT-MOO (noise-prediction network)</h2>
       <h2 class="subtitle has-text-justified">
           We use a Transformer-based diffusion architecture (DiT-MOO) adapted to multi-objective optimization. 
         The noisy candidate solutions are first embedded into tokens and combined with time-step embeddings and conditioning on objective information, allowing the model to learn how solution quality relates to structure in the decision space.
@@ -325,12 +333,43 @@ Empirical results on multi-objective optimization benchmarks, including offline 
       src="projectpage/images/dit_moo.png"
       alt="Banner image"
       style="width:100%; height:auto;">
-      <!-- TODO: Replace with your video description -->
-      
     </div>
   </div>
 </section>
 
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+
+      <div class="columns is-vcentered">
+
+        <!-- Left column: text -->
+        <div class="column is-two-thirds">
+          <h2 class="title is-3">Training procedure of SPREAD</h2>
+          <p class="subtitle has-text-justified">
+            A key novelty of SPREAD’s training is the shifted-conditioning strategy, 
+            where the model is trained using slightly shifted objective values rather 
+            than the exact ones. This encourages the model to generate solutions that 
+            improve over the conditioning point at sampling time, effectively turning 
+            diffusion into a refinement mechanism rather than just a generator.
+          </p>
+        </div>
+
+        <!-- Right column: image -->
+        <div class="column is-one-third">
+          <img
+            src="projectpage/images/algo_train_online.png"
+            alt="Training procedure diagram"
+            style="width:100%; height:auto;">
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+    
 <!--BibTex citation -->
   <section class="section" id="BibTeX">
     <div class="container is-max-desktop content">
